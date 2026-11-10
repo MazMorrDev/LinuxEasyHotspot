@@ -1,0 +1,14 @@
+---
+source: crates/leh-model/src/tc.rs
+expression: "plan(&state(vec![])).unwrap().batch"
+---
+qdisc add dev wlp2s0 root handle 1: htb default 9999 r2q 10
+class add dev wlp2s0 parent 1: classid 1:1 htb rate 20000kbit ceil 20000kbit quantum 1514
+class add dev wlp2s0 parent 1:1 classid 1:9999 htb rate 8kbit ceil 20000kbit prio 1 quantum 1514
+qdisc add dev wlp2s0 parent 1:9999 fq_codel
+qdisc add dev wlp2s0 handle ffff: ingress
+filter add dev wlp2s0 parent ffff: protocol all prio 10 matchall action mirred egress redirect dev lehifb0
+qdisc add dev lehifb0 root handle 1: htb default 9999 r2q 10
+class add dev lehifb0 parent 1: classid 1:1 htb rate 1000000kbit ceil 1000000kbit quantum 1514
+class add dev lehifb0 parent 1:1 classid 1:9999 htb rate 8kbit ceil 1000000kbit prio 1 quantum 1514
+qdisc add dev lehifb0 parent 1:9999 fq_codel

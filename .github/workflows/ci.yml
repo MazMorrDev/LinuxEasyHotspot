@@ -1,0 +1,52 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  check:
+    name: ${{ matrix.name }}
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: Ubuntu 24.04
+            container: ""
+          - name: Fedora latest
+            container: fedora:latest
+    container: ${{ matrix.container || null }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: System dependencies (Ubuntu)
+        if: matrix.container == ''
+        run: sudo apt-get update && sudo apt-get install -y libgtk-4-dev libadwaita-1-dev gettext appstream desktop-file-utils
+      - name: System dependencies (Fedora)
+        if: matrix.container != ''
+        run: dnf install -y gcc pkgconf-pkg-config gtk4-devel libadwaita-devel gettext appstream desktop-file-utils git
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo fmt --all --check
+      - run: cargo clippy --workspace --all-targets -- -D warnings
+      - run: cargo test --workspace
+      - name: Validate desktop and metainfo files
+        if: hashFiles('data/*.desktop') != ''
+        run: |
+          desktop-file-validate data/*.desktop
+          appstreamcli validate --no-net data/*.metainfo.xml
+
+  supply-chain:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: EmbarkStudios/cargo-deny-action@v2
+      - uses: rustsec/audit-check@v2
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}

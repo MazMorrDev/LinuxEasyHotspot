@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE policyconfig PUBLIC "-//freedesktop//DTD PolicyKit Policy Configuration 1.0//EN"
+ "http://www.freedesktop.org/standards/PolicyKit/1/policyconfig.dtd">
+<policyconfig>
+  <vendor>LinuxEasyHotspot</vendor>
+  <icon_name>network-wireless-hotspot-symbolic</icon_name>
+
+  <action id="io.github.OWNER.LinuxEasyHotspot.shape">
+    <description>Manage hotspot speed limits and device access</description>
+    <message>Authentication is required to set speed limits and block devices on the hotspot</message>
+    <defaults>
+      <allow_any>no</allow_any>
+      <allow_inactive>no</allow_inactive>
+      <allow_active>yes</allow_active>
+    </defaults>
+  </action>
+
+  <action id="io.github.OWNER.LinuxEasyHotspot.monitor">
+    <description>Read hotspot data usage and remove its speed limits</description>
+    <message>Authentication is required to read hotspot data usage</message>
+    <defaults>
+      <allow_any>no</allow_any>
+      <allow_inactive>no</allow_inactive>
+      <allow_active>yes</allow_active>
+    </defaults>
+  </action>
+</policyconfig>

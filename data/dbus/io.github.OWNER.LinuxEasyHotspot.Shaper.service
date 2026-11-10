@@ -1,0 +1,4 @@
+[D-BUS Service]
+Name=io.github.OWNER.LinuxEasyHotspot.Shaper
+Exec=/usr/libexec/linuxeasyhotspot/leh-shaper
+User=root

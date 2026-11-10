@@ -1,0 +1,12 @@
+[Desktop Entry]
+Type=Application
+Name=LinuxEasyHotspot
+GenericName=Wi-Fi Hotspot
+Comment=Share your internet over Wi-Fi in one click
+Exec=linuxeasyhotspot
+Icon=io.github.OWNER.LinuxEasyHotspot
+Terminal=false
+Categories=Network;GTK;
+Keywords=hotspot;wifi;wireless;tethering;share;access point;
+StartupNotify=true
+X-GNOME-UsesNotifications=true

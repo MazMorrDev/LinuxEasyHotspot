@@ -1,0 +1,21 @@
+[package]
+name = "leh-model"
+description = "Pure data model for LinuxEasyHotspot (no D-Bus, no GUI)"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+rand = "0.10.3"
+serde = { version = "1.0.229", features = ["derive"] }
+serde_json = "1.0.154"
+thiserror = "2.0.21"
+toml = "1.2.1"
+
+[dev-dependencies]
+insta = { version = "1.49.0", features = ["json"] }
+proptest = "1.11.0"

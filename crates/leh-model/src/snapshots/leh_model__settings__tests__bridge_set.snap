@@ -1,0 +1,185 @@
+---
+source: crates/leh-model/src/settings.rs
+expression: "(ap_profile(&cfg(Mode::Bridge), &caps(46), &ids), bridge_profile(&ids),\nbridge_port_profile(\"enp0s31f6\", &ids),)"
+---
+[
+  {
+    "802-11-wireless": {
+      "hidden": {
+        "type": "bool",
+        "value": false
+      },
+      "mode": {
+        "type": "str",
+        "value": "ap"
+      },
+      "ssid": {
+        "type": "bytes",
+        "value": [
+          84,
+          101,
+          115,
+          116,
+          32,
+          78,
+          101,
+          116
+        ]
+      }
+    },
+    "802-11-wireless-security": {
+      "group": {
+        "type": "str_list",
+        "value": [
+          "ccmp"
+        ]
+      },
+      "key-mgmt": {
+        "type": "str",
+        "value": "wpa-psk"
+      },
+      "pairwise": {
+        "type": "str_list",
+        "value": [
+          "ccmp"
+        ]
+      },
+      "proto": {
+        "type": "str_list",
+        "value": [
+          "rsn"
+        ]
+      },
+      "psk": {
+        "type": "str",
+        "value": "k7Rp-x4Mz-q9Tw"
+      }
+    },
+    "connection": {
+      "autoconnect": {
+        "type": "bool",
+        "value": false
+      },
+      "id": {
+        "type": "str",
+        "value": "LinuxEasyHotspot"
+      },
+      "interface-name": {
+        "type": "str",
+        "value": "wlp2s0"
+      },
+      "master": {
+        "type": "str",
+        "value": "00000000-0000-0000-0000-0000000000b1"
+      },
+      "permissions": {
+        "type": "str_list",
+        "value": [
+          "user:alice"
+        ]
+      },
+      "slave-type": {
+        "type": "str",
+        "value": "bridge"
+      },
+      "type": {
+        "type": "str",
+        "value": "802-11-wireless"
+      },
+      "uuid": {
+        "type": "str",
+        "value": "00000000-0000-0000-0000-0000000000a1"
+      }
+    }
+  },
+  {
+    "bridge": {
+      "forward-delay": {
+        "type": "u32",
+        "value": 4
+      },
+      "stp": {
+        "type": "bool",
+        "value": true
+      }
+    },
+    "connection": {
+      "autoconnect": {
+        "type": "bool",
+        "value": false
+      },
+      "id": {
+        "type": "str",
+        "value": "LinuxEasyHotspot Bridge"
+      },
+      "interface-name": {
+        "type": "str",
+        "value": "lehbr0"
+      },
+      "permissions": {
+        "type": "str_list",
+        "value": [
+          "user:alice"
+        ]
+      },
+      "type": {
+        "type": "str",
+        "value": "bridge"
+      },
+      "uuid": {
+        "type": "str",
+        "value": "00000000-0000-0000-0000-0000000000b1"
+      }
+    },
+    "ipv4": {
+      "method": {
+        "type": "str",
+        "value": "auto"
+      }
+    },
+    "ipv6": {
+      "method": {
+        "type": "str",
+        "value": "auto"
+      }
+    }
+  },
+  {
+    "connection": {
+      "autoconnect": {
+        "type": "bool",
+        "value": false
+      },
+      "id": {
+        "type": "str",
+        "value": "LinuxEasyHotspot Bridge Port"
+      },
+      "interface-name": {
+        "type": "str",
+        "value": "enp0s31f6"
+      },
+      "master": {
+        "type": "str",
+        "value": "00000000-0000-0000-0000-0000000000b1"
+      },
+      "permissions": {
+        "type": "str_list",
+        "value": [
+          "user:alice"
+        ]
+      },
+      "slave-type": {
+        "type": "str",
+        "value": "bridge"
+      },
+      "type": {
+        "type": "str",
+        "value": "802-3-ethernet"
+      },
+      "uuid": {
+        "type": "str",
+        "value": "00000000-0000-0000-0000-0000000000c1"
+      }
+    }
+  }
+]

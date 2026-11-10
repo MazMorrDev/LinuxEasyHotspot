@@ -1,0 +1,36 @@
+---
+source: crates/leh-model/src/tc.rs
+expression: plan(&s).unwrap().batch
+---
+qdisc add dev wlp2s0 root handle 1: htb default 9999 r2q 10
+class add dev wlp2s0 parent 1: classid 1:1 htb rate 20000kbit ceil 20000kbit quantum 1514
+class add dev wlp2s0 parent 1:1 classid 1:9999 htb rate 8kbit ceil 20000kbit prio 1 quantum 1514
+qdisc add dev wlp2s0 parent 1:9999 fq_codel
+class add dev wlp2s0 parent 1:1 classid 1:10 htb rate 5000kbit ceil 5000kbit prio 0 quantum 1514
+qdisc add dev wlp2s0 parent 1:10 fq_codel
+filter add dev wlp2s0 parent 1: protocol all prio 10 flower dst_mac 3c:28:6d:11:22:33 classid 1:10
+class add dev wlp2s0 parent 1:1 classid 1:11 htb rate 6666kbit ceil 20000kbit prio 1 quantum 1514
+qdisc add dev wlp2s0 parent 1:11 fq_codel
+filter add dev wlp2s0 parent 1: protocol all prio 10 flower dst_mac ac:bc:32:00:00:41 classid 1:11
+class add dev wlp2s0 parent 1:1 classid 1:12 htb rate 256kbit ceil 256kbit prio 2 quantum 1514
+qdisc add dev wlp2s0 parent 1:12 fq_codel
+filter add dev wlp2s0 parent 1: protocol all prio 10 flower dst_mac a4:cf:12:9e:00:57 classid 1:12
+qdisc add dev wlp2s0 handle ffff: ingress
+filter add dev wlp2s0 parent ffff: protocol ip prio 1 flower src_mac da:a1:19:42:00:88 ip_proto udp dst_port 67 action pass
+filter add dev wlp2s0 parent ffff: protocol all prio 2 flower src_mac da:a1:19:42:00:88 action drop
+filter add dev wlp2s0 parent ffff: protocol ip prio 1 flower src_mac 5c:0a:5b:00:00:99 ip_proto udp dst_port 67 action pass
+filter add dev wlp2s0 parent ffff: protocol all prio 2 flower src_mac 5c:0a:5b:00:00:99 action drop
+filter add dev wlp2s0 parent ffff: protocol all prio 10 matchall action mirred egress redirect dev lehifb0
+qdisc add dev lehifb0 root handle 1: htb default 9999 r2q 10
+class add dev lehifb0 parent 1: classid 1:1 htb rate 1000000kbit ceil 1000000kbit quantum 1514
+class add dev lehifb0 parent 1:1 classid 1:9999 htb rate 8kbit ceil 1000000kbit prio 1 quantum 1514
+qdisc add dev lehifb0 parent 1:9999 fq_codel
+class add dev lehifb0 parent 1:1 classid 1:10 htb rate 1000kbit ceil 1000kbit prio 0 quantum 1514
+qdisc add dev lehifb0 parent 1:10 fq_codel
+filter add dev lehifb0 parent 1: protocol all prio 10 flower src_mac 3c:28:6d:11:22:33 classid 1:10
+class add dev lehifb0 parent 1:1 classid 1:11 htb rate 333333kbit ceil 1000000kbit prio 1 quantum 1514
+qdisc add dev lehifb0 parent 1:11 fq_codel
+filter add dev lehifb0 parent 1: protocol all prio 10 flower src_mac ac:bc:32:00:00:41 classid 1:11
+class add dev lehifb0 parent 1:1 classid 1:12 htb rate 256kbit ceil 256kbit prio 2 quantum 1514
+qdisc add dev lehifb0 parent 1:12 fq_codel
+filter add dev lehifb0 parent 1: protocol all prio 10 flower src_mac a4:cf:12:9e:00:57 classid 1:12
