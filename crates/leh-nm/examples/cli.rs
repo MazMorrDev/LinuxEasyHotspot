@@ -86,7 +86,8 @@ async fn main() {
                         started |= s.state.is_running() || matches!(s.state, HotspotState::Error(_));
                         if s.state == HotspotState::Active && clients_task.is_none() && let Some(run) = &s.running {
                             println!("   {run:?}");
-                            let scope = run.client_scope();
+                            let mut scope = run.client_scope();
+                            scope.helper = zbus::Connection::system().await.ok();
                             clients_task = Some(tokio::spawn(async move {
                                 let mut w = clients::watch(scope, Duration::from_secs(3));
                                 while let Some(list) = w.next().await {
@@ -120,7 +121,11 @@ async fn main() {
             print_status(&c.snapshot());
         }
         Some("clients") => match &snap.running {
-            Some(run) => println!("{:#?}", clients::list(&run.client_scope()).await),
+            Some(run) => {
+                let mut scope = run.client_scope();
+                scope.helper = zbus::Connection::system().await.ok();
+                println!("{:#?}", clients::list(&scope).await);
+            }
             None => println!("hotspot is not running"),
         },
         _ => print_status(&snap),

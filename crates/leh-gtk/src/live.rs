@@ -157,10 +157,11 @@ impl Live {
         // Watch clients only while the hotspot is up.
         match (&snap.state, &snap.running) {
             (HotspotState::Active, Some(run)) if self.clients_task.is_none() => {
-                let scope = run.client_scope();
+                let mut scope = run.client_scope();
                 let tx = self.tx.clone();
                 self.clients_task = Some(runtime().spawn(async move {
                     use futures_util::StreamExt as _;
+                    scope.helper = system().await;
                     let mut w = clients::watch(scope, Duration::from_secs(3));
                     while let Some(list) = w.next().await {
                         tx.emit(Msg::Clients(list));

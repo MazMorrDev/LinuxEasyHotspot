@@ -796,6 +796,7 @@ dependencies = [
  "leh-model",
  "leh-nm",
  "serde_json",
+ "socket2",
  "tokio",
  "tracing",
  "tracing-subscriber",

@@ -4,6 +4,9 @@ All notable changes are documented here. The format follows [Keep a Changelog](h
 
 ## [Unreleased]
 
+### Fixed
+- Bridge mode: connected devices showed as "Unknown device". The app now finds their IP (one-off ARP probe of the subnet), asks the upstream router's DNS for their name, and gets the name the device itself sends in its DHCP request from the helper (new `ClientNames` method, helper API level 2). In Router mode the helper also reads NM's root-only lease file.
+
 ### Added
 - `.deb` package (`scripts/build-deb.sh`) with the app, the helper, D-Bus/polkit files, icons and the desktop entry. Depends on GTK 4, libadwaita, NetworkManager, iproute2 and polkit.
 - Typed speed limits and data caps: a text field plus a unit picker (kbps, Mbps, Gbps, KB/s, MB/s; MB, GB, TB) instead of spin buttons. Units can also be typed ("2,5 MB/s"); empty means no limit.
