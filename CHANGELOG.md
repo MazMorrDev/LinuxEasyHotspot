@@ -5,6 +5,7 @@ All notable changes are documented here. The format follows [Keep a Changelog](h
 ## [Unreleased]
 
 ### Fixed
+- Renaming a device: the name field was reset to the current name every few seconds while typing.
 - Bridge mode: connected devices showed as "Unknown device". The app now finds their IP (one-off ARP probe of the subnet), asks the upstream router's DNS for their name, and gets the name the device itself sends in its DHCP request from the helper (new `ClientNames` method, helper API level 2). In Router mode the helper also reads NM's root-only lease file.
 
 ### Added

@@ -194,7 +194,13 @@ impl DeviceDialog {
             }
         }
         self.guard.hold(|| {
-            if !self.name.has_focus() {
+            // The row itself never has focus, its inner text field does:
+            // don't overwrite what the user is typing.
+            if !self
+                .name
+                .state_flags()
+                .contains(gtk::StateFlags::FOCUS_WITHIN)
+            {
                 set_text(&self.name, &s.display_name(c));
             }
             let idx = ACCESS.iter().position(|a| *a == pol.access).unwrap_or(0);
