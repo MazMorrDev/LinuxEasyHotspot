@@ -1,5 +1,6 @@
 //! Settings: modes, adapters, radio, speed, new-device defaults, startup.
 
+use crate::i18n::{tr, trf};
 use std::cell::{Cell, RefCell};
 use std::rc::Rc;
 
@@ -9,7 +10,8 @@ use relm4::{Sender, adw, gtk};
 
 use crate::app::Msg;
 use crate::state::UiState;
-use crate::widgets::{Guard, LimitsEditor, OptRow, combo, group, set_combo, switch_row};
+use crate::widgets::{Guard, LimitRow, LimitsEditor, combo, group, set_combo, switch_row};
+use leh_model::units::Kind;
 
 /// (iface or `None` for automatic, label) entries shown in the source combo.
 type SourceList = Rc<RefCell<Vec<(Option<String>, String)>>>;
@@ -26,9 +28,8 @@ pub struct SettingsPage {
     channel: adw::ComboRow,
     hidden: adw::SwitchRow,
     speed: adw::PreferencesGroup,
-    startup: adw::PreferencesGroup,
-    total_down: OptRow,
-    total_up: OptRow,
+    total_down: LimitRow,
+    total_up: LimitRow,
     new_devices: adw::PreferencesGroup,
     needs_helper: gtk::Label,
     approval: adw::SwitchRow,
@@ -36,6 +37,7 @@ pub struct SettingsPage {
     autostart: adw::SwitchRow,
     start_at_login: adw::SwitchRow,
     tray: adw::SwitchRow,
+    language: adw::ComboRow,
     /// Rendered lists, to rebuild combo models only when they change.
     adapters_shown: RefCell<Vec<String>>,
     /// (iface or None for automatic, label) currently in the combo.
@@ -45,7 +47,7 @@ pub struct SettingsPage {
 }
 
 fn channels(band: Band) -> Vec<String> {
-    std::iter::once("Automatic".to_string())
+    std::iter::once(tr("Automatic").to_string())
         .chain(band.allowed_channels().iter().map(|c| c.to_string()))
         .collect()
 }
@@ -56,24 +58,24 @@ impl SettingsPage {
         let root = adw::PreferencesPage::new();
 
         // Connection mode
-        let modes = group("Connection mode");
+        let modes = group(tr("Connection mode"));
         let mut mode_rows = Vec::new();
         let mut first: Option<gtk::CheckButton> = None;
         for (mode, title, sub) in [
             (
                 Mode::Router,
-                "Router",
-                "Devices share this computer's internet",
+                tr("Router"),
+                tr("Devices share this computer's internet"),
             ),
             (
                 Mode::Bridge,
-                "Bridge",
-                "Devices join your wired network directly",
+                tr("Bridge"),
+                tr("Devices join your wired network directly"),
             ),
             (
                 Mode::LocalOnly,
-                "Local only",
-                "Devices can reach each other, but not the internet",
+                tr("Local only"),
+                tr("Devices can reach each other, but not the internet"),
             ),
         ] {
             let check = gtk::CheckButton::new();
@@ -100,9 +102,9 @@ impl SettingsPage {
         root.add(&modes);
 
         // Adapters
-        let adapters = group("Adapters");
-        let adapter = combo("Hotspot adapter", &[]);
-        let upstream = combo("Internet source", &[]);
+        let adapters = group(tr("Adapters"));
+        let adapter = combo(tr("Hotspot adapter"), &[]);
+        let upstream = combo(tr("Internet source"), &[]);
         crate::widgets::short_display(&upstream);
         crate::widgets::short_display(&adapter);
         adapters.add(&adapter);
@@ -139,10 +141,13 @@ impl SettingsPage {
         });
 
         // Radio
-        let radio = group("Radio");
-        let band = combo("Band", &["Automatic", "2.4 GHz", "5 GHz"]);
-        let channel = combo("Channel", &["Automatic"]);
-        let hidden = switch_row("Hidden network", "Devices must type the name to join");
+        let radio = group(tr("Radio"));
+        let band = combo(tr("Band"), &[tr("Automatic"), tr("2.4 GHz"), tr("5 GHz")]);
+        let channel = combo(tr("Channel"), &[tr("Automatic")]);
+        let hidden = switch_row(
+            tr("Hidden network"),
+            tr("Devices must type the name to join"),
+        );
         radio.add(&band);
         radio.add(&channel);
         radio.add(&hidden);
@@ -175,26 +180,20 @@ impl SettingsPage {
         });
 
         // Connection speed
-        let speed = group("Connection speed");
-        speed.set_description(Some("Limits for the whole hotspot. Set them to your real connection speed for priorities to work well."));
+        let speed = group(tr("Connection speed"));
+        speed.set_description(Some(tr("Limits for the whole hotspot. Set them to your real connection speed for priorities to work well.")));
         let t = tx.clone();
-        let total_down = OptRow::new(
-            "Total download speed",
-            "Mbps, shared by all devices",
-            "Unlimited",
-            (1.0, 1000.0, 1.0),
-            0,
-            1.0,
+        let total_down = LimitRow::new(
+            tr("Total download speed"),
+            Kind::Rate,
+            tr("Unlimited"),
             move |v| t.emit(Msg::TotalDown(v)),
         );
         let t = tx.clone();
-        let total_up = OptRow::new(
-            "Total upload speed",
-            "Mbps, shared by all devices",
-            "Unlimited",
-            (1.0, 1000.0, 1.0),
-            0,
-            1.0,
+        let total_up = LimitRow::new(
+            tr("Total upload speed"),
+            Kind::Rate,
+            tr("Unlimited"),
             move |v| t.emit(Msg::TotalUp(v)),
         );
         speed.add(&total_down.row);
@@ -202,19 +201,19 @@ impl SettingsPage {
         root.add(&speed);
 
         // New devices
-        let new_devices = group("New devices");
-        new_devices.set_description(Some(
+        let new_devices = group(tr("New devices"));
+        new_devices.set_description(Some(tr(
             "Applied automatically the first time a device connects.",
-        ));
+        )));
         let needs_helper = gtk::Label::builder()
-            .label("Needs helper")
+            .label(tr("Needs helper"))
             .valign(gtk::Align::Center)
             .css_classes(["caption", "dim-label"])
             .build();
         new_devices.set_header_suffix(Some(&needs_helper));
         let approval = switch_row(
-            "Ask before letting devices join",
-            "New devices wait until you allow them",
+            tr("Ask before letting devices join"),
+            tr("New devices wait until you allow them"),
         );
         new_devices.add(&approval);
         let (g, t) = (guard.clone(), tx.clone());
@@ -229,10 +228,19 @@ impl SettingsPage {
         root.add(&new_devices);
 
         // Startup
-        let startup = group("Startup");
-        let autostart = switch_row("Launch at login", "Start in the background when you log in");
-        let start_at_login = switch_row("Start hotspot at login", "");
-        let tray = switch_row("Show in system tray", "");
+        let startup = group(tr("Startup"));
+        let autostart = switch_row(
+            tr("Launch at login"),
+            tr("Open in the background when you log in"),
+        );
+        let start_at_login = switch_row(
+            tr("Start hotspot at login"),
+            tr("Start sharing as soon as you log in"),
+        );
+        let tray = switch_row(
+            tr("Show in system tray"),
+            tr("Closing the window keeps the app running in the tray"),
+        );
         startup.add(&autostart);
         startup.add(&start_at_login);
         startup.add(&tray);
@@ -250,11 +258,28 @@ impl SettingsPage {
             });
         }
 
+        // Language
+        let lang_group = adw::PreferencesGroup::new();
+        let language = combo(tr("Language"), &[tr("System"), "English", "Español"]);
+        language.set_subtitle(tr("Takes effect after restarting the app"));
+        lang_group.add(&language);
+        root.add(&lang_group);
+        let (g, t) = (guard.clone(), tx.clone());
+        language.connect_selected_notify(move |r| {
+            if !g.active()
+                && let Some(l) = leh_model::Language::ALL.get(r.selected() as usize)
+            {
+                t.emit(Msg::Language(*l));
+            }
+        });
+
         // Troubleshooting
-        let trouble = group("Troubleshooting");
+        let trouble = group(tr("Troubleshooting"));
         let diag = adw::ActionRow::builder()
-            .title("Export diagnostics…")
-            .subtitle("Save a report to attach to bug reports (passwords removed)")
+            .title(tr("Export diagnostics…"))
+            .subtitle(tr(
+                "Save a report to attach to bug reports (passwords removed)",
+            ))
             .activatable(true)
             .build();
         diag.add_suffix(&gtk::Image::from_icon_name("go-next-symbolic"));
@@ -273,7 +298,6 @@ impl SettingsPage {
             channel,
             hidden,
             speed,
-            startup,
             total_down,
             total_up,
             new_devices,
@@ -283,6 +307,7 @@ impl SettingsPage {
             autostart,
             start_at_login,
             tray,
+            language,
             adapters_shown: RefCell::default(),
             upstreams_shown,
             band_shown: Cell::new(None),
@@ -297,9 +322,9 @@ impl SettingsPage {
                 if *mode == Mode::LocalOnly {
                     row.set_sensitive(s.local_only_supported && editable);
                     if !s.local_only_supported {
-                        row.set_subtitle(&format!(
-                            "Needs NetworkManager 1.52 or newer (you have {})",
-                            s.nm_version
+                        row.set_subtitle(&trf(
+                            "Needs NetworkManager 1.52 or newer (you have {version})",
+                            &[("version", &s.nm_version)],
                         ));
                     }
                 } else {
@@ -315,7 +340,7 @@ impl SettingsPage {
                 .adapters
                 .iter()
                 .map(|(i, five)| {
-                    format!("{i} {}", if *five { "(2.4 + 5 GHz)" } else { "(2.4 GHz)" })
+                    format!("{i} {}", if *five { tr("(2.4 + 5 GHz)") } else { tr("(2.4 GHz)") })
                 })
                 .collect();
             if *self.adapters_shown.borrow() != adapters {
@@ -330,16 +355,16 @@ impl SettingsPage {
                 .unwrap_or(0);
             set_combo(&self.adapter, ai as u32);
             self.adapter.set_subtitle(match s.adapters.get(ai) {
-                Some((_, true)) => "Supports 2.4 and 5 GHz",
-                Some((_, false)) => "Supports 2.4 GHz",
-                None => "No adapter can create hotspots",
+                Some((_, true)) => tr("Supports 2.4 and 5 GHz"),
+                Some((_, false)) => tr("Supports 2.4 GHz"),
+                None => tr("No adapter can create hotspots"),
             });
             self.adapter.set_sensitive(editable);
 
             let bridge = s.cfg.mode == Mode::Bridge;
             let mut entries: Vec<(Option<String>, String)> = Vec::new();
             if !bridge {
-                entries.push((None, "Automatic (same as this computer)".into()));
+                entries.push((None, tr("Automatic (same as this computer)").into()));
             }
             entries.extend(
                 s.uplinks
@@ -358,17 +383,17 @@ impl SettingsPage {
                 .unwrap_or(0);
             set_combo(&self.upstream, ui as u32);
             self.upstream.set_title(if bridge {
-                "Wired network to bridge"
+                tr("Wired network to bridge")
             } else {
-                "Internet source"
+                tr("Internet source")
             });
             let selected = s.cfg.upstream_iface.as_deref().and_then(|i| s.uplink(i));
             let detail = match selected {
                 Some(u) => u.detail(),
-                None if bridge => "No wired connection selected".into(),
+                None if bridge => tr("No wired connection selected").into(),
                 None => match s.default_uplink() {
-                    Some(d) => format!("Same as this computer: {}", d.label()),
-                    None => "Same as this computer".into(),
+                    Some(d) => trf("Same as this computer: {source}", &[("source", &d.label())]),
+                    None => tr("Same as this computer").into(),
                 },
             };
             self.upstream.set_subtitle(&detail);
@@ -376,16 +401,15 @@ impl SettingsPage {
 
             let note = if bridge {
                 if entries.is_empty() {
-                    Some("No wired connection found. Plug in an Ethernet cable or USB tethering, or use Router mode.".to_string())
+                    Some(tr("No wired connection found. Plug in an Ethernet cable or USB tethering, or use Router mode.").to_string())
                 } else {
-                    Some("Only wired connections can be bridged. To share Wi-Fi or mobile internet, use Router mode.".to_string())
+                    Some(tr("Only wired connections can be bridged. To share Wi-Fi or mobile internet, use Router mode.").to_string())
                 }
             } else {
                 match (selected, s.default_uplink()) {
-                    (Some(sel), Some(def)) if sel.connected && !sel.is_default => Some(format!(
-                        "Hotspot traffic currently goes through {}. Sending only the hotspot through {} needs the upcoming helper.",
-                        def.label(),
-                        sel.label()
+                    (Some(sel), Some(def)) if sel.connected && !sel.is_default => Some(trf(
+                        "Hotspot traffic currently goes through {source}. Sending only the hotspot through {name} needs the upcoming helper.",
+                        &[("source", &def.label()), ("name", &sel.label())],
                     )),
                     _ => None,
                 }
@@ -401,7 +425,7 @@ impl SettingsPage {
             self.band.set_subtitle(if s.ap_supports_5ghz() {
                 ""
             } else {
-                "This adapter only supports 2.4 GHz"
+                tr("This adapter only supports 2.4 GHz")
             });
             if self.band_shown.get() != Some(s.cfg.band) {
                 let ch = channels(s.cfg.band);
@@ -426,8 +450,8 @@ impl SettingsPage {
             self.hidden.set_sensitive(editable);
 
             // Speed + defaults
-            self.total_down.set(s.total_down_mbps);
-            self.total_up.set(s.total_up_mbps);
+            self.total_down.set(s.total_down_kbps);
+            self.total_up.set(s.total_up_kbps);
             let ready = s.helper_ready();
             self.new_devices.set_sensitive(ready);
             self.needs_helper.set_visible(!ready);
@@ -438,17 +462,14 @@ impl SettingsPage {
             self.defaults.set(&s.defaults.limits);
 
             // Not wired to the real system yet.
-            let later = "Coming in a later version.";
             let speed_ok = s.helper_ready();
             self.total_down.row.set_sensitive(speed_ok);
             self.total_up.row.set_sensitive(speed_ok);
             self.speed.set_description(Some(if !speed_ok {
-                "Needs the LinuxEasyHotspot helper."
+                tr("Needs the LinuxEasyHotspot helper.")
             } else {
-                "Limits for the whole hotspot. Set them to your real connection speed for priorities to work well."
+                tr("Limits for the whole hotspot. Set them to your real connection speed for priorities to work well.")
             }));
-            self.startup.set_sensitive(!s.live);
-            self.startup.set_description(s.live.then_some(later));
 
             // Startup
             if self.autostart.is_active() != s.cfg.autostart {
@@ -461,7 +482,16 @@ impl SettingsPage {
             if self.tray.is_active() != s.cfg.show_tray {
                 self.tray.set_active(s.cfg.show_tray);
             }
-            self.tray.set_visible(s.tray_available);
+            self.tray.set_subtitle(if s.tray_available {
+                tr("Closing the window keeps the app running in the tray")
+            } else {
+                tr("Your desktop doesn't show a system tray")
+            });
+            let lang = leh_model::Language::ALL
+                .iter()
+                .position(|l| *l == s.cfg.language)
+                .unwrap_or(0);
+            set_combo(&self.language, lang as u32);
         });
     }
 }

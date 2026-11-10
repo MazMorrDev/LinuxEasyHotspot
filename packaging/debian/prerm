@@ -1,0 +1,7 @@
+#!/bin/sh
+set -e
+if [ "$1" = "remove" ]; then
+  # The helper removes its speed-limit rules when it gets SIGTERM.
+  pkill -TERM -x leh-shaper 2>/dev/null || true
+fi
+exit 0

@@ -73,16 +73,28 @@ pub fn save(cfg: &HotspotConfig) {
 #[serde(default, rename_all = "kebab-case")]
 pub struct DeviceStore {
     pub new_devices: leh_model::policy::DefaultPolicy,
-    pub total_down_mbps: Option<u32>,
-    pub total_up_mbps: Option<u32>,
+    pub total_down_kbps: Option<u32>,
+    pub total_up_kbps: Option<u32>,
+    /// Older files stored whole Mbps; read once and converted.
+    #[serde(skip_serializing)]
+    pub(crate) total_down_mbps: Option<u32>,
+    #[serde(skip_serializing)]
+    pub(crate) total_up_mbps: Option<u32>,
     pub devices: std::collections::BTreeMap<String, leh_model::policy::DevicePolicy>,
 }
 
 pub fn load_devices() -> DeviceStore {
-    std::fs::read_to_string(config_dir().join("devices.toml"))
+    let mut s: DeviceStore = std::fs::read_to_string(config_dir().join("devices.toml"))
         .ok()
         .and_then(|t| toml::from_str(&t).ok())
-        .unwrap_or_default()
+        .unwrap_or_default();
+    if let Some(m) = s.total_down_mbps.take() {
+        s.total_down_kbps.get_or_insert(m * 1000);
+    }
+    if let Some(m) = s.total_up_mbps.take() {
+        s.total_up_kbps.get_or_insert(m * 1000);
+    }
+    s
 }
 
 pub fn save_devices(store: &DeviceStore) {

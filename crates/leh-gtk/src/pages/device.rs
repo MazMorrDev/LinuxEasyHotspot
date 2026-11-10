@@ -1,5 +1,6 @@
 //! Per-device detail dialog (adaptive: bottom sheet on narrow windows).
 
+use crate::i18n::{tr, trf};
 use leh_model::policy::Access;
 use relm4::adw::prelude::*;
 use relm4::{Sender, adw, gtk};
@@ -42,23 +43,26 @@ impl DeviceDialog {
         header.append(&usage);
         header.append(&level);
 
-        let device = group("Device");
+        let device = group(tr("Device"));
         let name = adw::EntryRow::builder()
-            .title("Name")
+            .title(tr("Name"))
             .show_apply_button(true)
             .build();
-        let address = adw::ActionRow::builder().title("Address").build();
+        let address = adw::ActionRow::builder().title(tr("Address")).build();
         address.add_css_class("property");
         address.set_subtitle_selectable(true);
-        let access = combo("Access", &["Allowed", "Waiting for approval", "Blocked"]);
+        let access = combo(
+            tr("Access"),
+            &[tr("Allowed"), tr("Waiting for approval"), tr("Blocked")],
+        );
         device.add(&name);
         device.add(&address);
         device.add(&access);
 
-        let limits_group = group("Limits");
+        let limits_group = group(tr("Limits"));
         let follow = switch_row(
-            "Use default settings",
-            "Follow the settings for new devices",
+            tr("Use default settings"),
+            tr("Follow the settings for new devices"),
         );
         limits_group.add(&follow);
         let (t, m) = (tx.clone(), mac.to_owned());
@@ -66,7 +70,7 @@ impl DeviceDialog {
         limits.add_to(&limits_group);
 
         let forget = gtk::Button::builder()
-            .label("Forget this device")
+            .label(tr("Forget this device"))
             .halign(gtk::Align::Center)
             .css_classes(["pill", "destructive-action"])
             .build();
@@ -123,11 +127,11 @@ impl DeviceDialog {
         let (t, m, d) = (tx.clone(), mac.to_owned(), dialog.clone());
         forget.connect_clicked(move |_| {
             let confirm = adw::AlertDialog::new(
-                Some("Forget this device?"),
-                Some("Its name and limits are removed. If it connects again, it is treated as a new device."),
+                Some(tr("Forget this device?")),
+                Some(tr("Its name and limits are removed. If it connects again, it is treated as a new device.")),
             );
-            confirm.add_response("cancel", "Cancel");
-            confirm.add_response("forget", "Forget");
+            confirm.add_response("cancel", tr("Cancel"));
+            confirm.add_response("forget", tr("Forget"));
             confirm.set_response_appearance("forget", adw::ResponseAppearance::Destructive);
             let (t, m) = (t.clone(), m.clone());
             confirm.connect_response(Some("forget"), move |_, _| t.emit(Msg::ForgetDevice(m.clone())));
@@ -167,22 +171,25 @@ impl DeviceDialog {
         match lim.cap_mb {
             Some(cap) => {
                 let frac = c.session_bytes as f64 / (f64::from(cap) * 1e6);
-                self.usage.set_label(&format!(
-                    "This session: {} of {}{}",
-                    fmt_bytes(c.session_bytes),
-                    fmt_bytes(u64::from(cap) * 1_000_000),
-                    if eff.cap_reached {
-                        " · cap reached"
-                    } else {
-                        ""
-                    }
-                ));
+                let mut text = trf(
+                    "This session: {used} of {cap}",
+                    &[
+                        ("used", &fmt_bytes(c.session_bytes)),
+                        ("cap", &fmt_bytes(u64::from(cap) * 1_000_000)),
+                    ],
+                );
+                if eff.cap_reached {
+                    text.push_str(tr(" · cap reached"));
+                }
+                self.usage.set_label(&text);
                 self.level.set_value(frac.min(1.0));
                 self.level.set_visible(true);
             }
             None => {
-                self.usage
-                    .set_label(&format!("This session: {}", fmt_bytes(c.session_bytes)));
+                self.usage.set_label(&trf(
+                    "This session: {used}",
+                    &[("used", &fmt_bytes(c.session_bytes))],
+                ));
                 self.level.set_visible(false);
             }
         }
@@ -196,10 +203,10 @@ impl DeviceDialog {
                 self.follow.set_active(pol.follow_defaults);
             }
         });
-        let vendor = c.vendor.unwrap_or("Unknown vendor");
+        let vendor = c.vendor.unwrap_or(tr("Unknown vendor"));
         self.address.set_subtitle(&format!(
             "{} · {} · {vendor}",
-            c.ip.as_deref().unwrap_or("no address"),
+            c.ip.as_deref().unwrap_or(tr("no address")),
             c.mac
         ));
         self.limits.set_sensitive(!pol.follow_defaults);

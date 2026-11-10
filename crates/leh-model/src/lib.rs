@@ -16,9 +16,10 @@ pub mod settings;
 pub mod ssid;
 pub mod state;
 pub mod tc;
+pub mod units;
 
 pub use caps::{NmCapabilities, NmVersion};
-pub use config::{Band, ConfigError, HotspotConfig, Mode};
+pub use config::{Band, ConfigError, HotspotConfig, Language, Mode};
 pub use settings::{NmSettings, ProfileIds, SettingValue};
 pub use state::{ErrorKind, Event, HotspotState};
 

@@ -5,6 +5,11 @@ All notable changes are documented here. The format follows [Keep a Changelog](h
 ## [Unreleased]
 
 ### Added
+- `.deb` package (`scripts/build-deb.sh`) with the app, the helper, D-Bus/polkit files, icons and the desktop entry. Depends on GTK 4, libadwaita, NetworkManager, iproute2 and polkit.
+- Typed speed limits and data caps: a text field plus a unit picker (kbps, Mbps, Gbps, KB/s, MB/s; MB, GB, TB) instead of spin buttons. Units can also be typed ("2,5 MB/s"); empty means no limit.
+- Startup options: launch at login (XDG autostart, `--hidden`), start the hotspot at login, and a tray icon with start/stop, approve/block for waiting devices, show window and quit. Closing the window hides it to the tray.
+- Spanish translation and a language setting (System / English / Español). Strings live in `po/*.po`; `scripts/update-po.py` refreshes them.
+- The helper removes its rules on SIGTERM (e.g. when the package is removed).
 - Bandwidth management:
   - the `leh-shaper` root helper (system D-Bus, polkit-checked, limited to the hotspot interface),
   - `leh-model::tc` (validated HTB + IFB + flower rules),

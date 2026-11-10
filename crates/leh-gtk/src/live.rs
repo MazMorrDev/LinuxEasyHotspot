@@ -3,6 +3,7 @@
 //! The controller and client watcher run on a tokio runtime next to GTK's
 //! main loop; snapshots are forwarded to the UI as messages.
 
+use crate::i18n::{tr, trf};
 use std::sync::OnceLock;
 use std::time::Duration;
 
@@ -18,7 +19,7 @@ use crate::state::{
     ClientVm, DeviceIcon, HelperStatus, Problem, RunState, UiState, UplinkKind, UplinkVm,
 };
 
-fn runtime() -> &'static Runtime {
+pub fn runtime() -> &'static Runtime {
     static RT: OnceLock<Runtime> = OnceLock::new();
     RT.get_or_init(|| {
         tokio::runtime::Builder::new_multi_thread()
@@ -125,12 +126,14 @@ impl Live {
                         }
                         ErrorKind::DeviceUnavailable => st.problem = Some(Problem::AdapterGone),
                         ErrorKind::Activation(e) => {
-                            st.error =
-                                Some(("Couldn't start the hotspot".into(), e.message.clone()));
+                            st.error = Some((
+                                tr("Couldn't start the hotspot").into(),
+                                crate::i18n::tr_dyn(&e.message),
+                            ));
                         }
                         ErrorKind::Call(msg) => {
                             st.error =
-                                Some(("NetworkManager reported an error".into(), msg.clone()));
+                                Some((tr("NetworkManager reported an error").into(), msg.clone()));
                         }
                     }
                 }
@@ -230,11 +233,11 @@ pub fn initial_state(cfg: HotspotConfig) -> UiState {
     st.policies.clear();
     st.defaults = Default::default();
     st.helper = HelperStatus::Missing;
-    st.tray_available = false;
+    st.tray_available = true;
     let store = crate::config_store::load_devices();
     st.defaults = store.new_devices;
-    st.total_down_mbps = store.total_down_mbps;
-    st.total_up_mbps = store.total_up_mbps;
+    st.total_down_kbps = store.total_down_kbps;
+    st.total_up_kbps = store.total_up_kbps;
     st.policies = store.devices;
     st.running_iface = None;
     st
@@ -300,8 +303,8 @@ pub fn desired(st: &UiState) -> Option<Desired> {
         .collect();
     let state = ShapeState {
         iface: iface.clone(),
-        total_down_kbps: st.total_down_mbps.map(|m| m * 1000),
-        total_up_kbps: st.total_up_mbps.map(|m| m * 1000),
+        total_down_kbps: st.total_down_kbps,
+        total_up_kbps: st.total_up_kbps,
         devices,
     };
     // Data caps need the counters, which need the HTB classes.
@@ -414,7 +417,10 @@ impl Live {
                 self.shaping.wanted = None;
                 None
             }
-            Err(ShaperError::Other(e)) => Some(format!("Couldn't apply speed limits: {e}")),
+            Err(ShaperError::Other(e)) => Some(trf(
+                "Couldn't apply speed limits: {error}",
+                &[("error", &e)],
+            )),
         }
     }
 
@@ -487,4 +493,132 @@ pub fn merge_clients(st: &mut UiState, list: &[Client]) -> Vec<String> {
         st.clients.push(vm);
     }
     waiting
+}
+
+// ---------------------------------------------------------------------------
+// Installing the helper from a source checkout.
+
+/// The source checkout this binary was built from, if it still exists.
+pub fn source_root() -> Option<std::path::PathBuf> {
+    if packaged() {
+        return None;
+    }
+    let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+    let root = root.canonicalize().ok()?;
+    root.join("scripts/install-helper.sh")
+        .exists()
+        .then_some(root)
+}
+
+/// Installed system-wide (e.g. from the .deb), not run from a source tree.
+pub fn packaged() -> bool {
+    std::env::current_exe().is_ok_and(|p| p.starts_with("/usr/"))
+}
+
+/// The terminal command shown in the "copy" box.
+pub fn install_command() -> String {
+    match source_root() {
+        Some(r) => format!("cd '{}' && ./scripts/install-helper.sh", r.display()),
+        None if packaged() => "sudo apt install --reinstall linuxeasyhotspot".into(),
+        None => "./scripts/install-helper.sh".into(),
+    }
+}
+
+/// True when this process can't gain privileges (sudo/pkexec will fail).
+pub fn no_new_privs() -> bool {
+    std::fs::read_to_string("/proc/self/status")
+        .map(|s| {
+            s.lines()
+                .any(|l| l.starts_with("NoNewPrivs:") && l.trim_end().ends_with('1'))
+        })
+        .unwrap_or(false)
+}
+
+fn find_cargo() -> Option<std::path::PathBuf> {
+    std::env::var_os("CARGO")
+        .map(std::path::PathBuf::from)
+        .into_iter()
+        .chain(
+            std::env::var_os("HOME").map(|h| std::path::PathBuf::from(h).join(".cargo/bin/cargo")),
+        )
+        .chain(["/usr/bin/cargo".into()])
+        .find(|p| p.exists())
+}
+
+impl Live {
+    /// Re-checks for the helper every few seconds until it is found.
+    pub fn watch_helper(&self) {
+        let tx = self.tx.clone();
+        runtime().spawn(async move {
+            loop {
+                let found = match system().await {
+                    Some(c) => shaper_client::probe(&c).await,
+                    None => HelperProbe::Missing,
+                };
+                let status = match found {
+                    HelperProbe::Ready { .. } => HelperStatus::Ready,
+                    HelperProbe::TooOld => HelperStatus::TooOld,
+                    HelperProbe::Missing => HelperStatus::Missing,
+                };
+                tx.emit(Msg::Helper(status));
+                if status == HelperStatus::Ready {
+                    break;
+                }
+                tokio::time::sleep(Duration::from_secs(5)).await;
+            }
+        });
+    }
+
+    /// Builds the helper (as the user) and installs it with pkexec, which
+    /// shows the desktop's password dialog. Reports via `Msg::InstallDone`.
+    pub fn install_helper(&self) {
+        let tx = self.tx.clone();
+        runtime().spawn(async move {
+            let res = async {
+                let root = source_root().ok_or(tr("the source folder isn't available"))?;
+                let cargo = find_cargo().ok_or(tr("cargo wasn't found"))?;
+                tx.emit(Msg::InstallProgress(tr("Building the helper…").into()));
+                let out = tokio::process::Command::new(&cargo)
+                    .args(["build", "--release", "-p", "leh-shaper", "--manifest-path"])
+                    .arg(root.join("Cargo.toml"))
+                    .output()
+                    .await
+                    .map_err(|e| format!("cargo: {e}"))?;
+                if !out.status.success() {
+                    let err = String::from_utf8_lossy(&out.stderr);
+                    let last = err
+                        .lines()
+                        .rev()
+                        .find(|l| !l.trim().is_empty())
+                        .unwrap_or(tr("build failed"));
+                    return Err(format!("build failed: {last}"));
+                }
+                tx.emit(Msg::InstallProgress(
+                    tr("Waiting for your password…").into(),
+                ));
+                let out = tokio::process::Command::new("pkexec")
+                    .arg(root.join("scripts/install-helper.sh"))
+                    .arg("--as-root")
+                    .arg(root.join("target/release/leh-shaper"))
+                    .output()
+                    .await
+                    .map_err(|e| format!("pkexec: {e}"))?;
+                match out.status.code() {
+                    Some(0) => Ok(()),
+                    Some(126) => Err("cancelled".to_string()),
+                    _ => {
+                        let err = String::from_utf8_lossy(&out.stderr);
+                        Err(err
+                            .trim()
+                            .lines()
+                            .last()
+                            .unwrap_or(tr("install failed"))
+                            .to_owned())
+                    }
+                }
+            }
+            .await;
+            tx.emit(Msg::InstallDone(res.map_err(|e: String| e)));
+        });
+    }
 }

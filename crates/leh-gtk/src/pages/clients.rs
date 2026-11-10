@@ -1,5 +1,6 @@
 //! Clients: pending approvals, connected devices, blocked devices.
 
+use crate::i18n::{tr, trf};
 use std::cell::RefCell;
 use std::collections::HashMap;
 
@@ -41,14 +42,14 @@ fn heading(text: &str) -> gtk::Label {
 }
 
 fn subtitle(s: &UiState, c: &ClientVm, helper: bool) -> String {
-    let ip = c.ip.clone().unwrap_or_else(|| "no address yet".into());
+    let ip = c.ip.clone().unwrap_or_else(|| tr("no address yet").into());
     if !helper {
-        let vendor = c.vendor.unwrap_or("Unknown vendor");
+        let vendor = c.vendor.unwrap_or(tr("Unknown vendor"));
         let short_mac: String = c.mac.chars().take(8).collect();
         return format!("{ip} · {vendor} · {short_mac}…");
     }
     match s.effective(c).access {
-        Access::Pending => format!("{ip} · {}", c.vendor.unwrap_or("Unknown vendor")),
+        Access::Pending => format!("{ip} · {}", c.vendor.unwrap_or(tr("Unknown vendor"))),
         _ => policy_summary(s, c),
     }
 }
@@ -59,9 +60,9 @@ impl ClientsPage {
             .icon_name("phone-symbolic")
             .build();
 
-        let pending_title = heading("Waiting for approval");
+        let pending_title = heading(tr("Waiting for approval"));
         let pending = list();
-        let connected_title = heading("Connected");
+        let connected_title = heading(tr("Connected"));
         let connected = list();
         let blocked = list();
 
@@ -122,7 +123,7 @@ impl ClientsPage {
             let eff = s.effective(c);
             if eff.cap_reached {
                 let pill = gtk::Label::builder()
-                    .label("Cap reached")
+                    .label(tr("Cap reached"))
                     .valign(gtk::Align::Center)
                     .css_classes(["caption", "warning", "pill-tag"])
                     .build();
@@ -157,18 +158,18 @@ impl ClientsPage {
 
     pub fn update(&self, s: &UiState) {
         if s.run != RunState::On {
-            self.status.set_title("Hotspot is off");
+            self.status.set_title(tr("Hotspot is off"));
             self.status
-                .set_description(Some("Start the hotspot to see connected devices."));
+                .set_description(Some(tr("Start the hotspot to see connected devices.")));
             self.status.set_icon_name(Some(crate::ICON_SYMBOLIC));
             self.root.set_visible_child_name("status");
             self.shown_key.borrow_mut().clear();
             return;
         }
         if s.clients.is_empty() {
-            self.status.set_title("No devices yet");
+            self.status.set_title(tr("No devices yet"));
             self.status
-                .set_description(Some("Scan the QR code on Home to connect."));
+                .set_description(Some(tr("Scan the QR code on Home to connect.")));
             self.status.set_icon_name(Some("phone-symbolic"));
             self.root.set_visible_child_name("status");
             self.shown_key.borrow_mut().clear();
@@ -194,11 +195,11 @@ impl ClientsPage {
                         let row = self.row(s, c, false);
                         row.set_subtitle(&glib_escape(&subtitle(s, c, true)));
                         let block = gtk::Button::builder()
-                            .label("Block")
+                            .label(tr("Block"))
                             .valign(gtk::Align::Center)
                             .build();
                         let allow = gtk::Button::builder()
-                            .label("Allow")
+                            .label(tr("Allow"))
                             .valign(gtk::Align::Center)
                             .css_classes(["suggested-action"])
                             .build();
@@ -225,9 +226,9 @@ impl ClientsPage {
             self.pending_title.set_visible(n_pending > 0);
             self.pending.set_visible(n_pending > 0);
             self.connected_title
-                .set_label(&format!("Connected · {n_conn}"));
+                .set_label(&trf("Connected · {n}", &[("n", &n_conn.to_string())]));
             self.connected.set_visible(n_conn > 0);
-            blocked_exp.set_title(&format!("Blocked · {n_blocked}"));
+            blocked_exp.set_title(&trf("Blocked · {n}", &[("n", &n_blocked.to_string())]));
             self.blocked.append(&blocked_exp);
             self.blocked.set_visible(n_blocked > 0);
             *self.shown_key.borrow_mut() = key;

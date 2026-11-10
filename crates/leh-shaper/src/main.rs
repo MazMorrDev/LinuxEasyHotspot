@@ -406,9 +406,22 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .await?;
     tracing::info!("leh-shaper {} ready", env!("CARGO_PKG_VERSION"));
 
+    // On SIGTERM (package removal, shutdown) take our rules with us.
+    let mut term = tokio::signal::unix::signal(tokio::signal::unix::SignalKind::terminate())?;
+
     // Watchdog: clean up when the hotspot goes away; exit when idle.
     loop {
-        tokio::time::sleep(WATCH_EVERY).await;
+        tokio::select! {
+            () = tokio::time::sleep(WATCH_EVERY) => {}
+            _ = term.recv() => {
+                let mut g = inner.lock().await;
+                if let Some((iface, _)) = g.shaped.take() {
+                    tracing::info!(iface, "terminating; removing rules");
+                    clear_iface(&iface).await;
+                }
+                return Ok(());
+            }
+        }
         let mut g = inner.lock().await;
         if let Some((iface, _)) = g.shaped.clone()
             && !is_hotspot_iface(&conn, &iface).await

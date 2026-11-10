@@ -1,5 +1,6 @@
 //! Home: the one-button page.
 
+use crate::i18n::{n_, tr, trf};
 use std::cell::{Cell, RefCell};
 use std::rc::Rc;
 
@@ -15,9 +16,9 @@ use crate::widgets::{Guard, combo, set_combo, set_text};
 const MODES: [Mode; 3] = [Mode::Router, Mode::Bridge, Mode::LocalOnly];
 /// Shown as hover tips instead of long item labels.
 const MODE_HELP: [&str; 3] = [
-    "Router: devices share this computer's internet connection",
-    "Bridge: devices join your wired network and get addresses from your router",
-    "Local only: devices can reach each other and this computer, but not the internet",
+    n_("Router: devices share this computer's internet connection"),
+    n_("Bridge: devices join your wired network and get addresses from your router"),
+    n_("Local only: devices can reach each other and this computer, but not the internet"),
 ];
 
 pub struct HomePage {
@@ -74,7 +75,7 @@ impl HomePage {
         // ---- Off layout
         let hero_icon = gtk::Image::from_icon_name(crate::ICON_SYMBOLIC);
         hero_icon.set_pixel_size(40);
-        let hero_label = gtk::Label::new(Some("OFF"));
+        let hero_label = gtk::Label::new(Some(tr("OFF")));
         hero_label.add_css_class("caption-heading");
         let hero_box = gtk::Box::new(gtk::Orientation::Vertical, 4);
         hero_box.set_valign(gtk::Align::Center);
@@ -84,35 +85,41 @@ impl HomePage {
             .child(&hero_box)
             .halign(gtk::Align::Center)
             .css_classes(["circular", "hero-toggle"])
-            .tooltip_text("Start hotspot (Ctrl+Space)")
+            .tooltip_text(tr("Start hotspot (Ctrl+Space)"))
             .build();
-        hero.update_property(&[gtk::accessible::Property::Label("Turn hotspot on or off")]);
+        hero.update_property(&[gtk::accessible::Property::Label(tr(
+            "Turn hotspot on or off",
+        ))]);
         let t = tx.clone();
         hero.connect_clicked(move |_| t.emit(Msg::Toggle));
 
-        let off_status = gtk::Label::new(Some("Hotspot is off"));
+        let off_status = gtk::Label::new(Some(tr("Hotspot is off")));
         off_status.add_css_class("heading");
         off_status.add_css_class("dim-label");
 
-        let ssid = adw::EntryRow::builder().title("Name").build();
-        let password = adw::PasswordEntryRow::builder().title("Password").build();
+        let ssid = adw::EntryRow::builder().title(tr("Name")).build();
+        let password = adw::PasswordEntryRow::builder()
+            .title(tr("Password"))
+            .build();
         let copy = gtk::Button::builder()
             .icon_name("edit-copy-symbolic")
             .valign(gtk::Align::Center)
-            .tooltip_text("Copy password")
+            .tooltip_text(tr("Copy password"))
             .css_classes(["flat"])
             .build();
-        copy.update_property(&[gtk::accessible::Property::Label("Copy password")]);
+        copy.update_property(&[gtk::accessible::Property::Label(tr("Copy password"))]);
         let regen = gtk::Button::builder()
             .icon_name("view-refresh-symbolic")
             .valign(gtk::Align::Center)
-            .tooltip_text("Generate a new password")
+            .tooltip_text(tr("Generate a new password"))
             .css_classes(["flat"])
             .build();
-        regen.update_property(&[gtk::accessible::Property::Label("Generate a new password")]);
+        regen.update_property(&[gtk::accessible::Property::Label(tr(
+            "Generate a new password",
+        ))]);
         password.add_suffix(&copy);
         password.add_suffix(&regen);
-        let mode = combo("Mode", &["Router", "Bridge", "Local only"]);
+        let mode = combo(tr("Mode"), &[tr("Router"), tr("Bridge"), tr("Local only")]);
         // Items in the popup get the explanation as a tooltip.
         let factory = gtk::SignalListItemFactory::new();
         factory.connect_setup(|_, item| {
@@ -129,7 +136,7 @@ impl HomePage {
                 item.item().and_downcast::<gtk::StringObject>(),
             ) {
                 label.set_label(&text.string());
-                label.set_tooltip_text(MODE_HELP.get(item.position() as usize).copied());
+                label.set_tooltip_text(MODE_HELP.get(item.position() as usize).map(|s| tr(s)));
             }
         });
         mode.set_list_factory(Some(&factory));
@@ -167,12 +174,12 @@ impl HomePage {
         net.append(&password);
         net.append(&mode);
         let net_title = gtk::Label::builder()
-            .label("Network")
+            .label(tr("Network"))
             .halign(gtk::Align::Start)
             .css_classes(["heading"])
             .build();
 
-        let (start, start_label, start_spinner) = pill("Start hotspot", "suggested-action");
+        let (start, start_label, start_spinner) = pill(tr("Start hotspot"), "suggested-action");
         let t = tx.clone();
         start.connect_clicked(move |_| t.emit(Msg::Toggle));
 
@@ -203,7 +210,7 @@ impl HomePage {
             .child(&on_caption)
             .halign(gtk::Align::Start)
             .css_classes(["flat", "caption-link"])
-            .tooltip_text("Show connected devices")
+            .tooltip_text(tr("Show connected devices"))
             .build();
         let t = tx.clone();
         caption_btn.connect_clicked(move |_| t.emit(Msg::GoTo("clients")));
@@ -215,9 +222,9 @@ impl HomePage {
             .can_shrink(false)
             .halign(gtk::Align::Center)
             .build();
-        qr.update_property(&[gtk::accessible::Property::Label(
+        qr.update_property(&[gtk::accessible::Property::Label(tr(
             "QR code to join the hotspot",
-        )]);
+        ))]);
         let qr_frame = gtk::Box::builder()
             .halign(gtk::Align::Center)
             .css_classes(["qr-frame"])
@@ -230,16 +237,16 @@ impl HomePage {
         qr_box.append(&qr_frame);
         qr_box.append(&scan_label);
 
-        let on_password = adw::ActionRow::builder().title("Password").build();
+        let on_password = adw::ActionRow::builder().title(tr("Password")).build();
         on_password.add_css_class("property");
         on_password.set_subtitle_selectable(true);
         let pw_reveal = gtk::ToggleButton::builder()
             .icon_name("view-reveal-symbolic")
             .valign(gtk::Align::Center)
-            .tooltip_text("Show password")
+            .tooltip_text(tr("Show password"))
             .css_classes(["flat"])
             .build();
-        pw_reveal.update_property(&[gtk::accessible::Property::Label("Show password")]);
+        pw_reveal.update_property(&[gtk::accessible::Property::Label(tr("Show password"))]);
         on_password.add_suffix(&pw_reveal);
         let pw_text: Rc<RefCell<String>> = Rc::default();
         let (row, text) = (on_password.clone(), pw_text.clone());
@@ -247,7 +254,7 @@ impl HomePage {
         let copy2 = gtk::Button::builder()
             .icon_name("edit-copy-symbolic")
             .valign(gtk::Align::Center)
-            .tooltip_text("Copy password")
+            .tooltip_text(tr("Copy password"))
             .css_classes(["flat"])
             .build();
         let t = tx.clone();
@@ -259,7 +266,7 @@ impl HomePage {
             .build();
         pw_list.append(&on_password);
 
-        let (stop, _, _) = pill("Stop hotspot", "destructive-action");
+        let (stop, _, _) = pill(tr("Stop hotspot"), "destructive-action");
         let t = tx.clone();
         stop.connect_clicked(move |_| t.emit(Msg::Toggle));
 
@@ -357,7 +364,8 @@ impl HomePage {
             set_text(&self.password, &s.cfg.password);
             let idx = MODES.iter().position(|m| *m == s.cfg.mode).unwrap_or(0);
             set_combo(&self.mode, idx as u32);
-            self.mode.set_tooltip_text(MODE_HELP.get(idx).copied());
+            self.mode
+                .set_tooltip_text(MODE_HELP.get(idx).map(|s| tr(s)));
         });
         toggle_class(&self.ssid, "error", ssid::validate(&s.cfg.ssid).is_err());
         toggle_class(
@@ -380,16 +388,16 @@ impl HomePage {
         self.start_spinner.set_visible(starting);
         self.start_spinner.set_spinning(starting);
         self.start_label.set_label(if starting {
-            "Starting…"
+            tr("Starting…")
         } else {
-            "Start hotspot"
+            tr("Start hotspot")
         });
         self.hero_label
-            .set_label(if starting { "…" } else { "OFF" });
+            .set_label(if starting { "…" } else { tr("OFF") });
         self.off_status.set_label(if starting {
-            "Starting the hotspot…"
+            tr("Starting the hotspot…")
         } else {
-            "Hotspot is off"
+            tr("Hotspot is off")
         });
         toggle_class(&self.hero, "suggested-action", starting);
         self.hero_icon.set_icon_name(Some(crate::ICON_SYMBOLIC));
@@ -404,7 +412,7 @@ impl HomePage {
             *self.pw_text.borrow_mut() = s.cfg.password.clone();
             render_password(&self.on_password, &self.pw_reveal, &s.cfg.password);
             self.scan_label
-                .set_label(&format!("Scan to join “{}”", s.cfg.ssid));
+                .set_label(&trf("Scan to join “{name}”", &[("name", &s.cfg.ssid)]));
             self.stop.set_sensitive(s.run == RunState::On);
             let payload = leh_model::qr::payload(&s.cfg.ssid, &s.cfg.password, s.cfg.hidden);
             if *self.qr_payload.borrow() != payload {
@@ -432,9 +440,9 @@ fn render_password(row: &adw::ActionRow, reveal: &gtk::ToggleButton, password: &
         "view-reveal-symbolic"
     });
     let label = if shown {
-        "Hide password"
+        tr("Hide password")
     } else {
-        "Show password"
+        tr("Show password")
     };
     reveal.set_tooltip_text(Some(label));
     reveal.update_property(&[gtk::accessible::Property::Label(label)]);

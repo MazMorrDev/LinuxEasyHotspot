@@ -1,6 +1,9 @@
 //! Root component: window, header, banners, status pages, menus, shortcuts.
 
-use std::cell::RefCell;
+use std::cell::{Cell, RefCell};
+use std::rc::Rc;
+
+use crate::i18n::{tr, trf};
 use std::time::Duration;
 
 use leh_model::policy::{Access, DevicePolicy};
@@ -29,6 +32,8 @@ pub struct Args {
     /// Render the window to this PNG after startup, then quit.
     pub screenshot: Option<String>,
     pub size: Option<(i32, i32)>,
+    /// Started at login: stay in the background (tray), maybe start the hotspot.
+    pub hidden: bool,
 }
 
 #[derive(Debug)]
@@ -79,12 +84,25 @@ pub enum Msg {
     Clients(Vec<leh_model::clients::Client>),
     /// Live mode: helper probe result.
     Helper(HelperStatus),
+    /// Live mode: install the helper via pkexec.
+    InstallHelper,
+    InstallProgress(String),
+    InstallDone(Result<(), String>),
+    CopyText(String),
     /// Live mode: debounced shaping update is due.
     ShapeFlush(u64),
     /// Live mode: helper answered an apply (true) or clear (false).
     ShapeResult(bool, Result<(), leh_nm::shaper_client::ShaperError>),
     /// Live mode: per-device byte counters.
     Counters(std::collections::HashMap<String, (u64, u64)>),
+    ShowWindow,
+    Quit,
+    TrayStarted(Box<crate::tray::TrayHandle>),
+    /// The desktop has no tray (or it went away).
+    TrayGone,
+    TrayReady,
+    Language(leh_model::Language),
+    Restart,
 }
 
 pub struct App {
@@ -97,6 +115,11 @@ pub struct App {
     view_stack: adw::ViewStack,
     /// `None` in `--demo` mode.
     live: Option<Live>,
+    tray: Option<Box<crate::tray::TrayHandle>>,
+    /// Closing the window only hides it (a tray icon is showing).
+    hide_on_close: Rc<Cell<bool>>,
+    /// Started at login with "Start hotspot at login": start once NM is ready.
+    start_pending: bool,
 }
 
 pub struct Widgets {
@@ -123,9 +146,10 @@ impl App {
     fn device_store(&self) -> crate::config_store::DeviceStore {
         crate::config_store::DeviceStore {
             new_devices: self.state.defaults,
-            total_down_mbps: self.state.total_down_mbps,
-            total_up_mbps: self.state.total_up_mbps,
+            total_down_kbps: self.state.total_down_kbps,
+            total_up_kbps: self.state.total_up_kbps,
             devices: self.state.policies.clone(),
+            ..Default::default()
         }
     }
 
@@ -139,7 +163,12 @@ impl App {
 
     fn start(&mut self, sender: &ComponentSender<Self>) {
         if let Err(errs) = self.state.cfg.validate() {
-            self.toast(&errs[0].to_string());
+            let msg = crate::i18n::tr_dyn(&errs[0].to_string());
+            let mut c = msg.chars();
+            let msg = c
+                .next()
+                .map_or(String::new(), |f| f.to_uppercase().chain(c).collect());
+            self.toast(&msg);
             return;
         }
         self.state.error = None;
@@ -157,13 +186,13 @@ impl App {
 
     fn show_bridge_dialog(&self, sender: &ComponentSender<Self>) {
         let d = adw::AlertDialog::new(
-            Some("Switch to Bridge mode?"),
-            Some(
+            Some(tr("Switch to Bridge mode?")),
+            Some(tr(
                 "Devices will join your wired network and get addresses from your router. Your wired connection drops for a few seconds while the bridge is set up.",
-            ),
+            )),
         );
-        d.add_response("cancel", "Cancel");
-        d.add_response("bridge", "Use Bridge mode");
+        d.add_response("cancel", tr("Cancel"));
+        d.add_response("bridge", tr("Use Bridge mode"));
         d.set_response_appearance("bridge", adw::ResponseAppearance::Suggested);
         let s = sender.clone();
         d.connect_response(None, move |_, r| {
@@ -183,7 +212,7 @@ impl App {
             }
             Scenario::StartFails => {
                 self.next_start_fails = true;
-                self.toast("The next start will fail");
+                self.toast(tr("The next start will fail"));
             }
             Scenario::NoAdapter => st.problem = Some(Problem::NoAdapter),
             Scenario::NmMissing => st.problem = Some(Problem::NmMissing),
@@ -207,9 +236,12 @@ impl App {
                     st.policies.remove(&c.mac);
                     st.clients.push(c);
                     let msg = if st.defaults.require_approval {
-                        format!("“{name}” wants to join — see Clients")
+                        trf("“{name}” wants to join — see Clients", &[("name", &name)])
                     } else {
-                        format!("“{name}” joined with the default settings")
+                        trf(
+                            "“{name}” joined with the default settings",
+                            &[("name", &name)],
+                        )
                     };
                     self.toast(&msg);
                 }
@@ -218,32 +250,122 @@ impl App {
     }
 
     fn helper_dialog(&self, sender: &ComponentSender<Self>) {
+        if self.live.is_some() {
+            return self.live_helper_dialog(sender);
+        }
         let (heading, body) = match self.state.helper {
-            HelperStatus::Missing if self.live.is_some() => (
-                "Install the helper",
-                "Per-device speed limits, approval and data caps need a small helper that runs with administrator rights.\n\nFrom the LinuxEasyHotspot source folder, run:\n\n./scripts/install-helper.sh\n\nThen press Check again.",
-            ),
-            HelperStatus::TooOld if self.live.is_some() => (
-                "Update the helper",
-                "The installed helper is older than this app. Run ./scripts/install-helper.sh again from the source folder.",
-            ),
             HelperStatus::Missing => (
-                "Install the helper",
-                "Per-device speed limits, approval and data caps need a small helper that runs with administrator rights.\n\nOn Linux Mint, run:\n\nsudo apt install linuxeasyhotspot-helper",
+                tr("Install the helper"),
+                tr(
+                    "Per-device speed limits, approval and data caps need a small helper that runs with administrator rights.\n\nOn Linux Mint, run:\n\nsudo apt install linuxeasyhotspot",
+                ),
             ),
             HelperStatus::TooOld => (
-                "Update the helper",
-                "Your LinuxEasyHotspot helper is older than this app. Update it with your system's software updater, or run:\n\nsudo apt install --only-upgrade linuxeasyhotspot-helper",
+                tr("Update the helper"),
+                tr(
+                    "Your LinuxEasyHotspot helper is older than this app. Update it with your system's software updater, or run:\n\nsudo apt install --only-upgrade linuxeasyhotspot",
+                ),
             ),
-            _ => ("Helper ready", "Per-device control is available."),
+            _ => (tr("Helper ready"), tr("Per-device control is available.")),
         };
         let d = adw::AlertDialog::new(Some(heading), Some(body));
         d.set_body_use_markup(false);
-        d.add_response("close", "Close");
-        d.add_response("check", "Check again");
+        d.add_response("close", tr("Close"));
+        d.add_response("check", tr("Check again"));
         d.set_response_appearance("check", adw::ResponseAppearance::Suggested);
         let s = sender.clone();
         d.connect_response(Some("check"), move |_, _| s.input(Msg::HelperCheck));
+        d.present(Some(&self.window));
+    }
+
+    /// Live mode: one-click install, plus a command to copy.
+    fn live_helper_dialog(&self, sender: &ComponentSender<Self>) {
+        let update = self.state.helper == HelperStatus::TooOld;
+        let can_install = live::source_root().is_some() && !live::no_new_privs();
+        let body = if update {
+            tr("The installed helper is older than this app and needs an update.")
+        } else {
+            tr(
+                "Speed limits, approval of new devices and data caps need a small helper that runs with administrator rights. Everything else works without it.",
+            )
+        };
+        let d = adw::AlertDialog::new(
+            Some(if update {
+                tr("Update the helper")
+            } else {
+                tr("Install the helper")
+            }),
+            Some(body),
+        );
+
+        let cmd = live::install_command();
+        let code = gtk::Label::builder()
+            .label(&cmd)
+            .selectable(true)
+            .wrap(true)
+            .wrap_mode(gtk::pango::WrapMode::Char)
+            .xalign(0.0)
+            .hexpand(true)
+            .css_classes(["monospace"])
+            // Selectable with the mouse, but don't grab focus (and select
+            // everything) when the dialog opens.
+            .focusable(false)
+            .build();
+        // Wrap long paths without inserting misleading hyphens.
+        let attrs = gtk::pango::AttrList::new();
+        attrs.insert(gtk::pango::AttrInt::new_insert_hyphens(false));
+        code.set_attributes(Some(&attrs));
+        let copy = gtk::Button::builder()
+            .icon_name("edit-copy-symbolic")
+            .tooltip_text(tr("Copy command"))
+            .valign(gtk::Align::Center)
+            .css_classes(["flat"])
+            .build();
+        copy.update_property(&[gtk::accessible::Property::Label(tr("Copy command"))]);
+        let s = sender.clone();
+        copy.connect_clicked(move |_| s.input(Msg::CopyText(cmd.clone())));
+        let code_box = gtk::Box::builder()
+            .spacing(8)
+            .css_classes(["card", "code-box"])
+            .build();
+        code_box.append(&code);
+        code_box.append(&copy);
+        let hint = gtk::Label::builder()
+            .label(if can_install {
+                tr("Or run this in a terminal:")
+            } else if live::no_new_privs() {
+                tr("This app was started from a terminal that can't ask for administrator rights. Run this in a normal terminal:")
+            } else {
+                tr("Run this in a terminal:")
+            })
+            .wrap(true)
+            .xalign(0.0)
+            .css_classes(["dim-label", "caption"])
+            .build();
+        let extra = gtk::Box::new(gtk::Orientation::Vertical, 8);
+        extra.append(&hint);
+        extra.append(&code_box);
+        d.set_extra_child(Some(&extra));
+
+        d.add_response("close", tr("Close"));
+        if can_install {
+            d.add_response(
+                "install",
+                if update {
+                    tr("Update now")
+                } else {
+                    tr("Install now")
+                },
+            );
+            d.set_response_appearance("install", adw::ResponseAppearance::Suggested);
+            d.set_default_response(Some("install"));
+            let s = sender.clone();
+            d.connect_response(Some("install"), move |_, _| s.input(Msg::InstallHelper));
+        } else {
+            d.add_response("check", tr("Check again"));
+            let s = sender.clone();
+            d.connect_response(Some("check"), move |_, _| s.input(Msg::HelperCheck));
+        }
         d.present(Some(&self.window));
     }
 }
@@ -252,27 +374,33 @@ fn status_page_for(p: Problem) -> (&'static str, &'static str, &'static str, &'s
     match p {
         Problem::NmMissing => (
             "network-error-symbolic",
-            "NetworkManager is required",
-            "LinuxEasyHotspot creates hotspots through NetworkManager 1.30 or newer, which isn't running on this system.",
-            "Learn more",
+            tr("NetworkManager is required"),
+            tr(
+                "LinuxEasyHotspot creates hotspots through NetworkManager 1.30 or newer, which isn't running on this system.",
+            ),
+            tr("Learn more"),
         ),
         Problem::NoAdapter => (
             "network-wireless-disabled-symbolic",
-            "Your Wi-Fi card can't create hotspots",
-            "None of your Wi-Fi adapters support access-point mode. A USB Wi-Fi adapter that supports AP mode will work.",
-            "Refresh",
+            tr("Your Wi-Fi card can't create hotspots"),
+            tr(
+                "None of your Wi-Fi adapters support access-point mode. A USB Wi-Fi adapter that supports AP mode will work.",
+            ),
+            tr("Refresh"),
         ),
         Problem::BridgeNoEthernet => (
             "network-wired-disconnected-symbolic",
-            "Plug in an Ethernet cable",
-            "Bridge mode connects your devices to a wired network. Connect a cable, or share your internet in Router mode instead.",
-            "Use Router mode",
+            tr("Plug in an Ethernet cable"),
+            tr(
+                "Bridge mode connects your devices to a wired network. Connect a cable, or share your internet in Router mode instead.",
+            ),
+            tr("Use Router mode"),
         ),
         Problem::AdapterGone => (
             "network-wireless-offline-symbolic",
-            "Wi-Fi adapter unavailable",
-            "The Wi-Fi adapter was turned off or unplugged.",
-            "Retry",
+            tr("Wi-Fi adapter unavailable"),
+            tr("The Wi-Fi adapter was turned off or unplugged."),
+            tr("Retry"),
         ),
     }
 }
@@ -305,37 +433,81 @@ fn build_menu(demo: bool) -> gio::Menu {
         for (_, id, label) in Scenario::ALL {
             demo_menu.append(Some(label), Some(&format!("win.demo::{id}")));
         }
-        menu.append_submenu(Some("Demo scenarios"), &demo_menu);
+        menu.append_submenu(Some(tr("Demo scenarios")), &demo_menu);
     }
     let rest = gio::Menu::new();
-    rest.append(Some("Keyboard Shortcuts"), Some("win.shortcuts"));
-    rest.append(Some("About LinuxEasyHotspot"), Some("win.about"));
+    rest.append(Some(tr("Keyboard Shortcuts")), Some("win.shortcuts"));
+    rest.append(Some(tr("About LinuxEasyHotspot")), Some("win.about"));
     menu.append_section(None, &rest);
     menu
 }
 
 fn shortcuts_window(parent: &adw::ApplicationWindow) {
+    let esc = |s: &str| {
+        s.replace('&', "&amp;")
+            .replace('<', "&lt;")
+            .replace('>', "&gt;")
+    };
     let ui = r#"<interface>
   <object class="GtkShortcutsWindow" id="w">
     <property name="modal">1</property>
     <child><object class="GtkShortcutsSection"><property name="section-name">main</property>
-      <child><object class="GtkShortcutsGroup"><property name="title">General</property>
-        <child><object class="GtkShortcutsShortcut"><property name="title">Turn hotspot on or off</property><property name="accelerator">&lt;Ctrl&gt;space</property></object></child>
-        <child><object class="GtkShortcutsShortcut"><property name="title">Copy password</property><property name="accelerator">&lt;Ctrl&gt;&lt;Shift&gt;c</property></object></child>
-        <child><object class="GtkShortcutsShortcut"><property name="title">Settings</property><property name="accelerator">&lt;Ctrl&gt;comma</property></object></child>
-        <child><object class="GtkShortcutsShortcut"><property name="title">Quit</property><property name="accelerator">&lt;Ctrl&gt;q</property></object></child>
+      <child><object class="GtkShortcutsGroup"><property name="title">@GENERAL@</property>
+        <child><object class="GtkShortcutsShortcut"><property name="title">@TOGGLE@</property><property name="accelerator">&lt;Ctrl&gt;space</property></object></child>
+        <child><object class="GtkShortcutsShortcut"><property name="title">@COPY@</property><property name="accelerator">&lt;Ctrl&gt;&lt;Shift&gt;c</property></object></child>
+        <child><object class="GtkShortcutsShortcut"><property name="title">@SETTINGS@</property><property name="accelerator">&lt;Ctrl&gt;comma</property></object></child>
+        <child><object class="GtkShortcutsShortcut"><property name="title">@QUIT@</property><property name="accelerator">&lt;Ctrl&gt;q</property></object></child>
       </object></child>
     </object></child>
   </object>
 </interface>"#;
-    let b = gtk::Builder::from_string(ui);
+    let ui = ui
+        .replace("@GENERAL@", &esc(tr("General")))
+        .replace("@TOGGLE@", &esc(tr("Turn hotspot on or off")))
+        .replace("@COPY@", &esc(tr("Copy password")))
+        .replace("@SETTINGS@", &esc(tr("Settings")))
+        .replace("@QUIT@", &esc(tr("Quit")));
+    let b = gtk::Builder::from_string(&ui);
     if let Some(w) = b.object::<gtk::ShortcutsWindow>("w") {
         w.set_transient_for(Some(parent));
         w.present();
     }
 }
 
+fn tray_state(s: &UiState) -> crate::tray::TrayState {
+    let on = s.run == RunState::On;
+    crate::tray::TrayState {
+        running: on,
+        busy: matches!(s.run, RunState::Starting | RunState::Stopping),
+        devices: if on { s.connected_count() } else { 0 },
+        pending: if on && s.helper_ready() {
+            s.clients
+                .iter()
+                .filter(|c| s.effective(c).access == Access::Pending)
+                .map(|c| (c.mac.clone(), s.display_name(c)))
+                .collect()
+        } else {
+            Vec::new()
+        },
+    }
+}
+
 impl App {
+    fn ask_restart(&self, sender: &ComponentSender<Self>) {
+        let d = adw::AlertDialog::new(
+            Some(tr("Restart to change the language")),
+            Some(tr(
+                "LinuxEasyHotspot needs to restart to show the new language. A running hotspot keeps working.",
+            )),
+        );
+        d.add_response("later", tr("Later"));
+        d.add_response("restart", tr("Restart now"));
+        d.set_response_appearance("restart", adw::ResponseAppearance::Suggested);
+        let s = sender.clone();
+        d.connect_response(Some("restart"), move |_, _| s.input(Msg::Restart));
+        d.present(Some(&self.window));
+    }
+
     fn handle(&mut self, msg: Msg, sender: &ComponentSender<Self>) {
         let sender = sender.clone();
         let st = &mut self.state;
@@ -361,25 +533,28 @@ impl App {
                     self.next_start_fails = false;
                     st.run = RunState::Off;
                     let why = leh_model::reasons::device(9);
-                    st.error = Some(("Couldn't start the hotspot".into(), why.message));
+                    st.error = Some((
+                        tr("Couldn't start the hotspot").into(),
+                        crate::i18n::tr_dyn(&why.message),
+                    ));
                 } else if st.run == RunState::Starting {
                     st.run = RunState::On;
                 }
             }
             Msg::DemoStopped => {
                 st.run = RunState::Off;
-                self.toast("Hotspot stopped");
+                self.toast(tr("Hotspot stopped"));
             }
             Msg::Ssid(s) => st.cfg.ssid = s,
             Msg::Password(p) => st.cfg.password = p,
             Msg::RegeneratePassword => {
                 st.cfg.password = password::generate();
-                self.toast("New password generated");
+                self.toast(tr("New password generated"));
             }
             Msg::CopyPassword => {
                 let pw = st.cfg.password.clone();
                 self.window.clipboard().set_text(&pw);
-                self.toast("Password copied");
+                self.toast(tr("Password copied"));
             }
             Msg::Mode(Mode::Bridge) if st.cfg.mode != Mode::Bridge => {
                 // Re-render so the selector snaps back until confirmed.
@@ -387,8 +562,9 @@ impl App {
             }
             Msg::Mode(Mode::LocalOnly) if !st.local_only_supported => {
                 let v = st.nm_version.clone();
-                self.toast(&format!(
-                    "Local only needs NetworkManager 1.52 or newer (you have {v})"
+                self.toast(&trf(
+                    "Local only needs NetworkManager 1.52 or newer (you have {version})",
+                    &[("version", &v)],
                 ));
             }
             Msg::Mode(m) => st.cfg.mode = m,
@@ -422,7 +598,7 @@ impl App {
                 }
             }
             Msg::Band(Band::Ghz5) if !st.ap_supports_5ghz() => {
-                self.toast("This adapter doesn't support 5 GHz");
+                self.toast(tr("This adapter doesn't support 5 GHz"));
             }
             Msg::Band(b) => {
                 if st.cfg.band != b {
@@ -432,8 +608,8 @@ impl App {
             }
             Msg::Channel(c) => st.cfg.channel = c,
             Msg::Hidden(h) => st.cfg.hidden = h,
-            Msg::TotalDown(v) => st.total_down_mbps = v,
-            Msg::TotalUp(v) => st.total_up_mbps = v,
+            Msg::TotalDown(v) => st.total_down_kbps = v,
+            Msg::TotalUp(v) => st.total_up_kbps = v,
             Msg::Approval(a) => st.defaults.require_approval = a,
             Msg::Default(f) => f.apply(&mut st.defaults.limits),
             Msg::Autostart(a) => {
@@ -441,20 +617,32 @@ impl App {
                 if !a {
                     st.cfg.start_at_login = false;
                 }
+                if self.live.is_some() {
+                    crate::autostart::set(a);
+                }
             }
             Msg::StartAtLogin(a) => st.cfg.start_at_login = a,
-            Msg::Tray(t) => st.cfg.show_tray = t,
-            Msg::ExportDiagnostics if self.live.is_some() => {
-                self.toast("Diagnostics export is coming in a later version");
+            Msg::Tray(t) => {
+                st.cfg.show_tray = t;
+                if !t {
+                    self.tray = None;
+                } else if self.tray.is_none() && self.live.is_some() {
+                    crate::tray::spawn(sender.input_sender().clone());
+                }
             }
-            Msg::ExportDiagnostics => self.toast("Demo: diagnostics would be saved to a .txt file"),
+            Msg::ExportDiagnostics if self.live.is_some() => {
+                self.toast(tr("Diagnostics export is coming in a later version"));
+            }
+            Msg::ExportDiagnostics => {
+                self.toast(tr("Demo: diagnostics would be saved to a .txt file"))
+            }
             Msg::Allow(mac) => {
                 self.policy_mut(&mac).access = Access::Allowed;
-                self.toast("Device allowed");
+                self.toast(tr("Device allowed"));
             }
             Msg::Block(mac) => {
                 self.policy_mut(&mac).access = Access::Blocked;
-                self.toast("Device blocked");
+                self.toast(tr("Device blocked"));
             }
             Msg::OpenDevice(mac) => {
                 let d = DeviceDialog::new(sender.input_sender().clone(), &mac);
@@ -493,7 +681,7 @@ impl App {
                 if let Some(d) = self.device.borrow_mut().take() {
                     d.dialog.close();
                 }
-                self.toast("Device forgotten");
+                self.toast(tr("Device forgotten"));
             }
             Msg::HelperAction if self.live.is_some() && st.helper == HelperStatus::Unauthorized => {
                 // Try again; polkit shows its dialog if needed.
@@ -505,7 +693,7 @@ impl App {
             Msg::HelperAction => match st.helper {
                 HelperStatus::Unauthorized => {
                     st.helper = HelperStatus::Ready;
-                    self.toast("Demo: the system would ask for your password here");
+                    self.toast(tr("Demo: the system would ask for your password here"));
                 }
                 _ => self.helper_dialog(&sender),
             },
@@ -516,13 +704,13 @@ impl App {
             }
             Msg::HelperCheck => {
                 st.helper = HelperStatus::Ready;
-                self.toast("Helper found — per-device control enabled");
+                self.toast(tr("Helper found — per-device control enabled"));
             }
             Msg::ErrorDetails => {
                 if let Some((title, details)) = st.error.clone() {
                     let d = adw::AlertDialog::new(Some(&title), Some(&details));
-                    d.add_response("close", "Close");
-                    d.add_response("retry", "Try again");
+                    d.add_response("close", tr("Close"));
+                    d.add_response("retry", tr("Try again"));
                     d.set_response_appearance("retry", adw::ResponseAppearance::Suggested);
                     let s = sender.clone();
                     d.connect_response(Some("retry"), move |_, _| s.input(Msg::Toggle));
@@ -581,19 +769,79 @@ impl App {
                 if let Some(live) = &mut self.live {
                     live.apply(st, *snap);
                 }
+                if self.start_pending && st.problem.is_none() && !st.adapters.is_empty() {
+                    self.start_pending = false;
+                    if st.run == RunState::Off {
+                        self.start(&sender);
+                    }
+                }
+            }
+            Msg::ShowWindow => self.window.present(),
+            Msg::Quit => relm4::main_application().quit(),
+            Msg::TrayStarted(h) => {
+                st.tray_available = true;
+                if st.cfg.show_tray {
+                    self.tray = Some(h);
+                }
+            }
+            Msg::TrayReady => st.tray_available = true,
+            Msg::TrayGone => {
+                st.tray_available = false;
+                self.tray = None;
+                // Without a tray there'd be no way back to a hidden window.
+                if !self.window.is_visible() && !self.start_pending && st.run == RunState::Off {
+                    self.window.present();
+                }
+            }
+            Msg::Language(l) => {
+                if l != st.cfg.language {
+                    st.cfg.language = l;
+                    self.ask_restart(&sender);
+                }
+            }
+            Msg::Restart => {
+                crate::RESTART.store(true, std::sync::atomic::Ordering::Relaxed);
+                relm4::main_application().quit();
             }
             Msg::Clients(list) => {
                 if self.live.is_some() {
                     for name in live::merge_clients(st, &list) {
-                        self.toast(&format!("“{name}” wants to join, see Clients"));
+                        self.toast(&trf(
+                            "“{name}” wants to join — see Clients",
+                            &[("name", &name)],
+                        ));
                     }
                 }
+            }
+            Msg::InstallHelper => {
+                if let Some(live) = &self.live {
+                    live.install_helper();
+                }
+            }
+            Msg::InstallProgress(text) => self.toast(&text),
+            Msg::InstallDone(Ok(())) => {
+                self.toast(tr("Helper installed"));
+                if let Some(live) = &self.live {
+                    live.watch_helper();
+                }
+            }
+            Msg::InstallDone(Err(e)) if e == "cancelled" => {
+                self.toast(tr("Installation cancelled"))
+            }
+            Msg::InstallDone(Err(e)) => {
+                let d = adw::AlertDialog::new(Some(tr("Couldn't install the helper")), Some(&e));
+                d.add_response("close", tr("Close"));
+                d.present(Some(&self.window));
+            }
+            Msg::CopyText(text) => {
+                self.window.clipboard().set_text(&text);
+                self.toast(tr("Copied to the clipboard"));
             }
             Msg::Helper(h) => {
                 let was = st.helper;
                 st.helper = h;
                 if h == HelperStatus::Ready && was != HelperStatus::Ready && self.page != "home" {
-                    self.toast("Helper found: per-device control is on");
+                    self.toast(tr("Helper found: per-device control is on"));
                 }
             }
             Msg::ShapeFlush(g) => {
@@ -625,18 +873,19 @@ impl App {
             Msg::GoTo(p) => self.view_stack.set_visible_child_name(p),
             Msg::About => {
                 let helper = match self.state.helper {
-                    HelperStatus::Ready => "Helper: installed (API level 1)",
-                    HelperStatus::Missing => "Helper: not installed",
-                    HelperStatus::Unauthorized => "Helper: installed, not authorized",
-                    HelperStatus::TooOld => "Helper: needs an update",
+                    HelperStatus::Ready => tr("Helper: installed (API level 1)"),
+                    HelperStatus::Missing => tr("Helper: not installed"),
+                    HelperStatus::Unauthorized => tr("Helper: installed, not authorized"),
+                    HelperStatus::TooOld => tr("Helper: needs an update"),
                 };
                 let about = adw::AboutDialog::builder()
                     .application_name("LinuxEasyHotspot")
                     .application_icon(crate::APP_ID)
-                    .developer_name("LinuxEasyHotspot contributors")
+                    .developer_name(tr("LinuxEasyHotspot contributors"))
                     .version(env!("CARGO_PKG_VERSION"))
                     .comments(format!(
-                        "The simplest way to share a Wi-Fi hotspot.\n\n{helper}"
+                        "{}\n\n{helper}",
+                        tr("The simplest way to share a Wi-Fi hotspot.")
                     ))
                     .license_type(gtk::License::Gpl30)
                     .build();
@@ -680,17 +929,17 @@ impl SimpleComponent for App {
         let clients = ClientsPage::new(tx.clone());
 
         let view_stack = adw::ViewStack::new();
-        view_stack.add_titled_with_icon(&home.root, Some("home"), "Home", crate::ICON_SYMBOLIC);
+        view_stack.add_titled_with_icon(&home.root, Some("home"), tr("Home"), crate::ICON_SYMBOLIC);
         view_stack.add_titled_with_icon(
             &settings.root,
             Some("settings"),
-            "Settings",
+            tr("Settings"),
             "emblem-system-symbolic",
         );
         view_stack.add_titled_with_icon(
             &clients.root,
             Some("clients"),
-            "Clients",
+            tr("Clients"),
             "system-users-symbolic",
         );
         let s = sender.clone();
@@ -710,7 +959,7 @@ impl SimpleComponent for App {
         let menu_btn = gtk::MenuButton::builder()
             .icon_name("open-menu-symbolic")
             .menu_model(&build_menu(args.demo))
-            .tooltip_text("Main menu")
+            .tooltip_text(tr("Main menu"))
             .primary(true)
             .build();
         header.pack_end(&menu_btn);
@@ -719,7 +968,7 @@ impl SimpleComponent for App {
         let s = sender.clone();
         helper_banner.connect_button_clicked(move |_| s.input(Msg::HelperAction));
         let error_banner = adw::Banner::new("");
-        error_banner.set_button_label(Some("Details"));
+        error_banner.set_button_label(Some(tr("Details")));
         let s = sender.clone();
         error_banner.connect_button_clicked(move |_| s.input(Msg::ErrorDetails));
 
@@ -777,6 +1026,7 @@ impl SimpleComponent for App {
         add("copy-password", || Msg::CopyPassword);
         add("settings", || Msg::GoTo("settings"));
         add("about", || Msg::About);
+        add("helper", || Msg::HelperAction);
         let demo_action = gio::SimpleAction::new("demo", Some(glib::VariantTy::STRING));
         let s = sender.clone();
         demo_action.connect_activate(move |_, p| {
@@ -792,12 +1042,30 @@ impl SimpleComponent for App {
         let w = window.clone();
         shortcuts.connect_activate(move |_, _| shortcuts_window(&w));
         window.add_action(&shortcuts);
-        let quit = gio::SimpleAction::new("quit", None);
-        let w = window.clone();
-        quit.connect_activate(move |_, _| w.close());
-        window.add_action(&quit);
+        add("quit", || Msg::Quit);
+
+        // With a tray icon, closing the window keeps the app (and the
+        // per-device rules) running in the background.
+        let hide_on_close = Rc::new(Cell::new(false));
+        let h = hide_on_close.clone();
+        window.connect_close_request(move |w| {
+            if h.get() {
+                w.set_visible(false);
+                glib::Propagation::Stop
+            } else {
+                glib::Propagation::Proceed
+            }
+        });
 
         let app = relm4::main_application();
+        // Show the window on every launch, except the first one at login.
+        let first = Cell::new(args.hidden);
+        let w = window.clone();
+        app.connect_activate(move |_| {
+            if !first.replace(false) {
+                w.present();
+            }
+        });
         app.set_accels_for_action("win.toggle", &["<Control>space"]);
         app.set_accels_for_action("win.copy-password", &["<Control><Shift>c"]);
         app.set_accels_for_action("win.settings", &["<Control>comma"]);
@@ -829,7 +1097,7 @@ impl SimpleComponent for App {
         }
         let live = (!args.demo).then(|| Live::start(sender.input_sender().clone()));
         if let Some(l) = &live {
-            l.probe_helper();
+            l.watch_helper();
         }
         let mut state = if live.is_some() {
             live::initial_state(crate::config_store::load())
@@ -849,6 +1117,14 @@ impl SimpleComponent for App {
         if let Some(mac) = args.device {
             sender.input(Msg::OpenDevice(mac));
         }
+        let start_pending = args.hidden && live.is_some() && state.cfg.start_at_login;
+        if live.is_some() {
+            // Keep the entry pointing at this binary.
+            crate::autostart::set(state.cfg.autostart);
+        }
+        if live.is_some() && state.cfg.show_tray {
+            crate::tray::spawn(sender.input_sender().clone());
+        }
         let model = App {
             state,
             page: args.page.unwrap_or_else(|| "home".into()),
@@ -858,6 +1134,9 @@ impl SimpleComponent for App {
             device: RefCell::new(None),
             view_stack,
             live,
+            tray: None,
+            hide_on_close,
+            start_pending,
         };
         let widgets = Widgets {
             home,
@@ -889,6 +1168,11 @@ impl SimpleComponent for App {
         if let Some(live) = &mut self.live {
             live.sync_shaping(&self.state);
         }
+        self.hide_on_close
+            .set(self.tray.is_some() && self.state.cfg.show_tray);
+        if let Some(t) = &mut self.tray {
+            t.update(tray_state(&self.state));
+        }
     }
 
     fn update_view(&self, w: &mut Widgets, _sender: ComponentSender<Self>) {
@@ -918,16 +1202,16 @@ impl SimpleComponent for App {
         let (title, button) = match s.helper {
             HelperStatus::Ready => ("", None),
             HelperStatus::Missing => (
-                "Per-device speed limits need the LinuxEasyHotspot helper",
-                Some("Show how"),
+                tr("Per-device speed limits need the LinuxEasyHotspot helper"),
+                Some(tr("Set up…")),
             ),
             HelperStatus::Unauthorized => (
-                "Allow LinuxEasyHotspot to manage speed limits",
-                Some("Authorize"),
+                tr("Allow LinuxEasyHotspot to manage speed limits"),
+                Some(tr("Authorize")),
             ),
             HelperStatus::TooOld => (
-                "Update the helper to use per-device control",
-                Some("Show how"),
+                tr("Update the helper to use per-device control"),
+                Some(tr("Set up…")),
             ),
         };
         w.helper_banner.set_title(title);

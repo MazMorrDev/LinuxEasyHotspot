@@ -1,0 +1,21 @@
+Package: linuxeasyhotspot
+Version: @VERSION@
+Architecture: @ARCH@
+Maintainer: MazMorrDev <marconchelo12@gmail.com>
+Installed-Size: @SIZE@
+Depends: @SHLIBS@, network-manager (>= 1.30), iproute2, polkitd | policykit-1, dbus
+Recommends: pkexec
+Section: net
+Priority: optional
+Homepage: https://github.com/OWNER/LinuxEasyHotspot
+Description: Share your internet over Wi-Fi in one click
+ LinuxEasyHotspot creates a Wi-Fi hotspot through NetworkManager with as
+ few steps as possible: network name, password and a QR code to join.
+ .
+ It supports Router (NAT), Bridge and Local-only modes, choosing the
+ Wi-Fi adapter, band, channel and internet source, and shows the
+ connected devices.
+ .
+ Per-device speed limits, priority, approval of new devices and data
+ caps are provided by the included leh-shaper helper, a small
+ polkit-protected system D-Bus service started on demand.

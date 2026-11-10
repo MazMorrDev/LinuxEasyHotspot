@@ -22,3 +22,8 @@
   border-radius: 9999px;
   background-color: alpha(@warning_bg_color, 0.2);
 }
+
+/* Copyable command in the helper dialog. */
+.code-box {
+  padding: 8px 8px 8px 12px;
+}

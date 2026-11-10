@@ -55,6 +55,22 @@ impl Band {
     }
 }
 
+/// Interface language; `System` follows `LANGUAGE`/`LC_*`/`LANG`.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
+pub enum Language {
+    #[default]
+    #[serde(rename = "system")]
+    System,
+    #[serde(rename = "en")]
+    English,
+    #[serde(rename = "es")]
+    Spanish,
+}
+
+impl Language {
+    pub const ALL: [Self; 3] = [Self::System, Self::English, Self::Spanish];
+}
+
 #[derive(Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(default, rename_all = "kebab-case")]
 pub struct HotspotConfig {
@@ -76,6 +92,8 @@ pub struct HotspotConfig {
     /// Also start the hotspot when launched at login.
     pub start_at_login: bool,
     pub show_tray: bool,
+    /// Interface language.
+    pub language: Language,
     /// UUID of the NM profile we created, to find it again.
     pub profile_uuid: Option<String>,
 }
@@ -95,6 +113,7 @@ impl Default for HotspotConfig {
             autostart: false,
             start_at_login: false,
             show_tray: true,
+            language: Language::System,
             profile_uuid: None,
         }
     }
@@ -115,6 +134,7 @@ impl fmt::Debug for HotspotConfig {
             .field("autostart", &self.autostart)
             .field("start_at_login", &self.start_at_login)
             .field("show_tray", &self.show_tray)
+            .field("language", &self.language)
             .field("profile_uuid", &self.profile_uuid)
             .finish()
     }

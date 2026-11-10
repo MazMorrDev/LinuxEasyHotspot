@@ -2,6 +2,7 @@
 //! In `--demo` mode it is filled with fake data; later the `leh-nm`
 //! controller snapshot is mapped into it.
 
+use crate::i18n::{n_, tr, tr_n, trf};
 use std::collections::BTreeMap;
 
 use leh_model::policy::{
@@ -77,9 +78,9 @@ pub struct UplinkVm {
 impl UplinkVm {
     pub fn kind_label(&self) -> &'static str {
         match self.kind {
-            UplinkKind::Ethernet => "Ethernet",
-            UplinkKind::Wifi => "Wi-Fi",
-            UplinkKind::Modem => "Mobile broadband",
+            UplinkKind::Ethernet => tr("Ethernet"),
+            UplinkKind::Wifi => tr("Wi-Fi"),
+            UplinkKind::Modem => tr("Mobile broadband"),
         }
     }
 
@@ -93,11 +94,11 @@ impl UplinkVm {
 
     pub fn status(&self) -> &'static str {
         if self.is_default {
-            "in use"
+            tr("in use")
         } else if self.connected {
             "connected"
         } else if self.available {
-            "not connected, connects when the hotspot starts"
+            tr("not connected, connects when the hotspot starts")
         } else {
             "unavailable"
         }
@@ -148,8 +149,8 @@ pub struct UiState {
     pub nm_version: String,
     pub local_only_supported: bool,
     /// Total download limit for the whole hotspot (NM tbf), Mbps.
-    pub total_down_mbps: Option<u32>,
-    pub total_up_mbps: Option<u32>,
+    pub total_down_kbps: Option<u32>,
+    pub total_up_kbps: Option<u32>,
     /// Interface running the hotspot right now (live mode).
     pub running_iface: Option<String>,
     pub defaults: DefaultPolicy,
@@ -179,7 +180,7 @@ impl UiState {
             .get(&c.mac)
             .and_then(|p| p.alias.clone())
             .or_else(|| c.hostname.clone())
-            .unwrap_or_else(|| "Unknown device".into())
+            .unwrap_or_else(|| tr("Unknown device").into())
     }
 
     pub fn client(&self, mac: &str) -> Option<&ClientVm> {
@@ -226,40 +227,40 @@ impl UiState {
     pub fn status_title(&self) -> String {
         match self.cfg.mode {
             Mode::Router => match self.default_uplink() {
-                Some(u) => format!("Sharing internet from {}", u.label()),
-                None => "Hotspot on, but this computer has no internet right now".into(),
+                Some(u) => trf("Sharing internet from {source}", &[("source", &u.label())]),
+                None => tr("Hotspot on, but this computer has no internet right now").into(),
             },
             Mode::Bridge => {
                 let iface = self
                     .cfg
                     .upstream_iface
                     .as_deref()
-                    .unwrap_or("your wired network");
-                format!(
-                    "Bridged to {}",
-                    self.uplink(iface).map_or(iface.to_owned(), UplinkVm::label)
+                    .unwrap_or(tr("your wired network"));
+                trf(
+                    "Bridged to {source}",
+                    &[(
+                        "source",
+                        &self.uplink(iface).map_or(iface.to_owned(), UplinkVm::label),
+                    )],
                 )
             }
-            Mode::LocalOnly => "Local network only (no internet)".into(),
+            Mode::LocalOnly => tr("Local network only (no internet)").into(),
         }
     }
 
     pub fn status_caption(&self) -> String {
         let n = self.connected_count();
-        let mut parts = vec![match n {
-            1 => "1 device".to_string(),
-            n => format!("{n} devices"),
-        }];
+        let mut parts = vec![tr_n("{n} device", "{n} devices", n)];
         let (band, ch) = match (self.cfg.band, self.cfg.channel) {
-            (Band::Ghz5, 0) => ("5 GHz", 36),
-            (Band::Ghz5, c) => ("5 GHz", c),
-            (_, 0) => ("2.4 GHz", 6),
-            (_, c) => ("2.4 GHz", c),
+            (Band::Ghz5, 0) => (tr("5 GHz"), 36),
+            (Band::Ghz5, c) => (tr("5 GHz"), c),
+            (_, 0) => (tr("2.4 GHz"), 6),
+            (_, c) => (tr("2.4 GHz"), c),
         };
         parts.push(band.into());
-        parts.push(format!("ch {ch}"));
-        if let Some(t) = self.total_down_mbps {
-            parts.push(format!("≤{t} Mbps"));
+        parts.push(trf("ch {n}", &[("n", &ch.to_string())]));
+        if let Some(t) = self.total_down_kbps {
+            parts.push(format!("≤{}", leh_model::units::format_rate(t)));
         }
         parts.join(" · ")
     }
@@ -275,10 +276,8 @@ pub fn fmt_rate(kbps: f64) -> String {
 
 pub fn fmt_limit(kbps: Option<u32>) -> String {
     match kbps {
-        None => "Unlimited".into(),
-        Some(k) if k >= 1000 && k % 1000 == 0 => format!("{} Mbps", k / 1000),
-        Some(k) if k >= 1000 => format!("{:.1} Mbps", f64::from(k) / 1000.0),
-        Some(k) => format!("{k} kbps"),
+        None => tr("Unlimited").into(),
+        Some(k) => leh_model::units::format_rate(k),
     }
 }
 
@@ -299,19 +298,20 @@ pub fn policy_summary(state: &UiState, c: &ClientVm) -> String {
     let mut parts = Vec::new();
     if eff.cap_reached {
         match l.cap_action {
-            CapAction::Throttle { kbps } => {
-                parts.push(format!("{} (throttled)", fmt_limit(Some(kbps))))
-            }
-            CapAction::Block => parts.push("Blocked by data cap".into()),
+            CapAction::Throttle { kbps } => parts.push(trf(
+                "{rate} (throttled)",
+                &[("rate", &fmt_limit(Some(kbps)))],
+            )),
+            CapAction::Block => parts.push(tr("Blocked by data cap").into()),
         }
     } else if eff.down_kbps.is_none() && eff.up_kbps.is_none() {
-        parts.push("Unlimited".into());
+        parts.push(tr("Unlimited").into());
     } else {
-        parts.push(format!("{} limit", fmt_limit(eff.down_kbps)));
+        parts.push(trf("{rate} limit", &[("rate", &fmt_limit(eff.down_kbps))]));
     }
     match eff.priority {
-        Priority::High => parts.push("High priority".into()),
-        Priority::Low => parts.push("Low priority".into()),
+        Priority::High => parts.push(tr("High priority").into()),
+        Priority::Low => parts.push(tr("Low priority").into()),
         Priority::Normal => {}
     }
     if let Some(cap) = l.cap_mb {
@@ -342,30 +342,42 @@ pub mod demo {
 
     impl Scenario {
         pub const ALL: [(Scenario, &'static str, &'static str); 12] = [
-            (Scenario::Normal, "normal", "Normal"),
-            (Scenario::StartFails, "start-fails", "Next start fails"),
-            (Scenario::NoAdapter, "no-adapter", "No AP-capable adapter"),
-            (Scenario::NmMissing, "nm-missing", "NetworkManager missing"),
+            (Scenario::Normal, "normal", n_("Normal")),
+            (Scenario::StartFails, "start-fails", n_("Next start fails")),
+            (
+                Scenario::NoAdapter,
+                "no-adapter",
+                n_("No AP-capable adapter"),
+            ),
+            (
+                Scenario::NmMissing,
+                "nm-missing",
+                n_("NetworkManager missing"),
+            ),
             (
                 Scenario::BridgeNoEthernet,
                 "bridge-no-eth",
-                "Bridge without Ethernet",
+                n_("Bridge without Ethernet"),
             ),
-            (Scenario::AdapterGone, "adapter-gone", "Adapter unplugged"),
-            (Scenario::HelperReady, "helper-ready", "Helper: ready"),
+            (
+                Scenario::AdapterGone,
+                "adapter-gone",
+                n_("Adapter unplugged"),
+            ),
+            (Scenario::HelperReady, "helper-ready", n_("Helper: ready")),
             (
                 Scenario::HelperMissing,
                 "helper-missing",
-                "Helper: not installed",
+                n_("Helper: not installed"),
             ),
             (
                 Scenario::HelperUnauthorized,
                 "helper-unauth",
-                "Helper: not authorized",
+                n_("Helper: not authorized"),
             ),
-            (Scenario::HelperTooOld, "helper-old", "Helper: too old"),
-            (Scenario::NoDevices, "no-devices", "No devices"),
-            (Scenario::NewDevice, "new-device", "A new device joins"),
+            (Scenario::HelperTooOld, "helper-old", n_("Helper: too old")),
+            (Scenario::NoDevices, "no-devices", n_("No devices")),
+            (Scenario::NewDevice, "new-device", n_("A new device joins")),
         ];
 
         pub fn from_id(id: &str) -> Option<Self> {
@@ -540,8 +552,8 @@ pub mod demo {
             ],
             nm_version: "1.46.0".into(),
             local_only_supported: false,
-            total_down_mbps: None,
-            total_up_mbps: None,
+            total_down_kbps: None,
+            total_up_kbps: None,
             running_iface: Some("wlp2s0".into()),
             defaults: DefaultPolicy {
                 require_approval: true,
@@ -577,8 +589,8 @@ pub mod demo {
             let jitter = rng.random_range(0.55..1.0);
             let cap = |v: f64, lim: Option<u32>| lim.map_or(v, |l| v.min(f64::from(l) * 0.97));
             let mut down = cap(c.demand_kbps.0 * jitter, eff.down_kbps);
-            if let Some(t) = snapshot.total_down_mbps {
-                down = down.min(f64::from(t) * 1000.0 / 2.0);
+            if let Some(t) = snapshot.total_down_kbps {
+                down = down.min(f64::from(t) / 2.0);
             }
             c.down_kbps = down;
             c.up_kbps = cap(c.demand_kbps.1 * jitter, eff.up_kbps);

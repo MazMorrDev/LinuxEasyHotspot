@@ -1,9 +1,11 @@
 //! Small reusable widget groups.
 
+use crate::i18n::{tr, trf};
 use std::cell::Cell;
 use std::rc::Rc;
 
 use leh_model::policy::{CapAction, Limits, Priority};
+use leh_model::units::{self, Kind, UnitError};
 use relm4::adw::prelude::*;
 use relm4::{adw, gtk};
 
@@ -101,86 +103,144 @@ pub fn group(title: &str) -> adw::PreferencesGroup {
     adw::PreferencesGroup::builder().title(title).build()
 }
 
-/// A numeric value that can be switched off ("unlimited"/"no cap").
-/// Stored values are `shown * scale` (e.g. Mbps shown, kbit/s stored).
+/// A typed limit: a number plus a unit drop-down; empty means no limit.
+/// Values are reported in base units (kbit/s for speeds, MB for data).
 #[derive(Clone)]
-pub struct OptRow {
-    pub row: adw::SpinRow,
-    switch: gtk::Switch,
-    scale: f64,
+pub struct LimitRow {
+    pub row: adw::EntryRow,
+    unit: gtk::DropDown,
+    kind: Kind,
+    title: String,
     off_label: &'static str,
-    unit: &'static str,
+    value: Rc<Cell<Option<u32>>>,
     guard: Guard,
 }
 
-impl OptRow {
-    #[allow(clippy::too_many_arguments)]
+impl LimitRow {
     pub fn new(
         title: &str,
-        unit: &'static str,
+        kind: Kind,
         off_label: &'static str,
-        (min, max, step): (f64, f64, f64),
-        digits: u32,
-        scale: f64,
         on_change: impl Fn(Option<u32>) + 'static,
     ) -> Self {
-        let row = adw::SpinRow::with_range(min, max, step);
-        row.set_title(title);
-        row.set_digits(digits);
-        let switch = gtk::Switch::builder().valign(gtk::Align::Center).build();
-        switch.update_property(&[gtk::accessible::Property::Label(&format!("Enable {title}"))]);
-        row.add_suffix(&switch);
+        let row = adw::EntryRow::builder()
+            .title(title)
+            .show_apply_button(true)
+            .input_purpose(gtk::InputPurpose::Number)
+            .build();
+        let labels: Vec<&str> = kind.units().iter().map(|u| u.label).collect();
+        let unit = gtk::DropDown::from_strings(&labels);
+        unit.set_valign(gtk::Align::Center);
+        unit.add_css_class("flat");
+        unit.set_selected(match kind {
+            Kind::Rate => units::RATE_DEFAULT,
+            Kind::Data => units::DATA_DEFAULT,
+        } as u32);
+        unit.update_property(&[gtk::accessible::Property::Label(&trf(
+            "{name} unit",
+            &[("name", title)],
+        ))]);
+        row.add_suffix(&unit);
+        row.set_tooltip_text(Some(match kind {
+            Kind::Rate => tr("Type a number and pick the unit, or type it: 5, 2.5 Mbps, 800 kbps, 1 MB/s. Leave empty for no limit."),
+            Kind::Data => tr("Type a number and pick the unit, or type it: 500, 1.5 GB. Leave empty for no cap."),
+        }));
         let me = Self {
             row,
-            switch,
-            scale,
-            off_label,
             unit,
+            kind,
+            title: title.to_owned(),
+            off_label,
+            value: Rc::new(Cell::new(None)),
             guard: Guard::default(),
         };
         let on_change = Rc::new(on_change);
-        let emit = {
+        let commit = {
             let me = me.clone();
-            let on_change = on_change.clone();
             move || {
-                me.refresh_subtitle();
-                if !me.guard.active() {
-                    on_change(me.value());
+                if me.guard.active() {
+                    return;
+                }
+                if let Some(v) = me.commit() {
+                    on_change(v);
                 }
             }
         };
-        let e = emit.clone();
-        me.row.connect_value_notify(move |_| e());
-        me.switch.connect_active_notify(move |_| emit());
-        me.refresh_subtitle();
+        let c = commit.clone();
+        me.row.connect_apply(move |_| c());
+        let c = commit.clone();
+        me.row.connect_entry_activated(move |_| c());
+        let c = commit.clone();
+        me.unit.connect_selected_notify(move |_| c());
+        let focus = gtk::EventControllerFocus::new();
+        focus.connect_leave(move |_| commit());
+        me.row.add_controller(focus);
+        me.refresh_title();
         me
     }
 
-    fn value(&self) -> Option<u32> {
-        self.switch
-            .is_active()
-            .then(|| (self.row.value() * self.scale).round() as u32)
+    /// Parses the text; on success normalizes it and returns the new value
+    /// if it changed. On error marks the row and keeps the old value.
+    fn commit(&self) -> Option<Option<u32>> {
+        let text = self.row.text();
+        match units::parse(self.kind, &text, self.unit.selected() as usize) {
+            Ok(v) => {
+                self.row.remove_css_class("error");
+                let v = v.map(|(base, u)| {
+                    self.show(base, u);
+                    base
+                });
+                if v.is_none() && !text.is_empty() {
+                    self.guard.hold(|| self.row.set_text(""));
+                }
+                let changed = self.value.replace(v) != v;
+                self.refresh_title();
+                changed.then_some(v)
+            }
+            Err(e) => {
+                self.row.add_css_class("error");
+                let why = match e {
+                    UnitError::Invalid => tr("type a number"),
+                    UnitError::TooSmall => tr("too small"),
+                    UnitError::TooLarge => tr("too large"),
+                };
+                self.row.set_title(&format!("{} — {why}", self.title));
+                None
+            }
+        }
     }
 
-    fn refresh_subtitle(&self) {
-        if self.switch.is_active() {
-            self.row.set_subtitle(self.unit);
+    fn show(&self, base: u32, preferred: usize) {
+        let (text, u) = units::display(self.kind, base, preferred);
+        self.guard.hold(|| {
+            if self.row.text() != text {
+                self.row.set_text(&text);
+            }
+            self.unit.set_selected(u as u32);
+        });
+    }
+
+    fn refresh_title(&self) {
+        if self.value.get().is_some() {
+            self.row.set_title(&self.title);
         } else {
-            self.row.set_subtitle(self.off_label);
+            self.row
+                .set_title(&format!("{} · {}", self.title, self.off_label));
         }
     }
 
     pub fn set(&self, v: Option<u32>) {
-        if self.value() == v {
+        // Don't overwrite what the user is typing.
+        if self.value.get() == v || self.row.has_focus() || self.row.focus_child().is_some() {
             return;
         }
-        self.guard.hold(|| {
-            self.switch.set_active(v.is_some());
-            if let Some(v) = v {
-                self.row.set_value(f64::from(v) / self.scale);
-            }
-        });
-        self.refresh_subtitle();
+        self.value.set(v);
+        self.row.remove_css_class("error");
+        match v {
+            Some(base) => self.show(base, self.unit.selected() as usize),
+            None => self.guard.hold(|| self.row.set_text("")),
+        }
+        self.refresh_title();
     }
 }
 
@@ -214,10 +274,10 @@ const CAP_ACTIONS: [CapAction; 3] = [
 
 /// Rows for download, upload, priority, data cap and cap action.
 pub struct LimitsEditor {
-    down: OptRow,
-    up: OptRow,
+    down: LimitRow,
+    up: LimitRow,
     priority: adw::ComboRow,
-    cap: OptRow,
+    cap: LimitRow,
     cap_action: adw::ComboRow,
     guard: Guard,
     enabled: Cell<bool>,
@@ -225,42 +285,33 @@ pub struct LimitsEditor {
 
 impl LimitsEditor {
     pub fn new(on: impl Fn(LimitField) + Clone + 'static) -> Self {
-        let mbps = (0.5, 1000.0, 0.5);
         let o = on.clone();
-        let down = OptRow::new(
-            "Download limit",
-            "Mbps",
-            "Unlimited",
-            mbps,
-            1,
-            1000.0,
+        let down = LimitRow::new(
+            tr("Download limit"),
+            Kind::Rate,
+            tr("Unlimited"),
             move |v| o(LimitField::Down(v)),
         );
         let o = on.clone();
-        let up = OptRow::new(
-            "Upload limit",
-            "Mbps",
-            "Unlimited",
-            mbps,
-            1,
-            1000.0,
-            move |v| o(LimitField::Up(v)),
-        );
+        let up = LimitRow::new(tr("Upload limit"), Kind::Rate, tr("Unlimited"), move |v| {
+            o(LimitField::Up(v))
+        });
         let o = on.clone();
-        let cap = OptRow::new(
-            "Data cap",
-            "MB per session",
-            "No cap",
-            (10.0, 100_000.0, 50.0),
-            0,
-            1.0,
+        let cap = LimitRow::new(
+            tr("Data cap per session"),
+            Kind::Data,
+            tr("No cap"),
             move |v| o(LimitField::Cap(v)),
         );
-        let priority = combo("Priority", &["High", "Normal", "Low"]);
-        priority.set_subtitle("Who gets bandwidth first when the link is busy");
+        let priority = combo(tr("Priority"), &[tr("High"), tr("Normal"), tr("Low")]);
+        priority.set_subtitle(tr("Who gets bandwidth first when the link is busy"));
         let cap_action = combo(
-            "When the cap is reached",
-            &["Block the device", "Slow to 256 kbps", "Slow to 1 Mbps"],
+            tr("When the cap is reached"),
+            &[
+                tr("Block the device"),
+                tr("Slow to 256 kbps"),
+                tr("Slow to 1 Mbps"),
+            ],
         );
         let guard = Guard::default();
         let (g, o) = (guard.clone(), on.clone());
