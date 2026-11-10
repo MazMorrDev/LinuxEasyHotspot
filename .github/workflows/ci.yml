@@ -40,7 +40,11 @@ jobs:
         if: hashFiles('data/*.desktop') != ''
         run: |
           desktop-file-validate data/*.desktop
-          appstreamcli validate --no-net data/*.metainfo.xml
+          # No AppStream metainfo yet; validate it once one is added.
+          for f in data/*.metainfo.xml; do
+            [ -e "$f" ] || continue
+            appstreamcli validate --no-net "$f"
+          done
 
   supply-chain:
     runs-on: ubuntu-24.04
