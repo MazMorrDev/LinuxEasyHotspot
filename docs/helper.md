@@ -38,6 +38,13 @@ The app notices the helper within a few seconds; there's no need to restart it.
   - Remote and inactive sessions are refused. Administrators can tighten this with a polkit rule.
 - **Cleanup:** it removes its rules when the hotspot stops (even if the app crashed) or when it gets SIGTERM (package removal, shutdown), and exits after a minute of idleness.
 
+## Device names
+
+The app names devices by itself where it can (reverse DNS against NM's dnsmasq, or against your router in Bridge mode). The helper fills the gaps through `ClientNames` (polkit `…monitor`, hotspot interface only, read-only):
+
+- **Bridge mode:** your router hands out addresses, so the helper listens on UDP port 67 of the bridge for the DHCP requests devices broadcast when they join, and keeps the name they send. It never answers, and the socket shares the port (`SO_REUSEPORT`) like dnsmasq does. A device that was connected before the helper started is named when it reconnects.
+- **Router mode:** it reads `/var/lib/NetworkManager/dnsmasq-<iface>.leases`, which is root-only on Ubuntu/Mint.
+
 ## How limits are applied
 
 - **Download** (to a device): an HTB class per device on the hotspot interface, matched by MAC.

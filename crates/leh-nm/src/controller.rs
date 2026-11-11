@@ -43,6 +43,7 @@ impl RunningInfo {
             ap_iface: self.ap_iface.clone(),
             l3_iface: self.l3_iface.clone(),
             dns_server: self.gateway,
+            helper: None,
         }
     }
 }

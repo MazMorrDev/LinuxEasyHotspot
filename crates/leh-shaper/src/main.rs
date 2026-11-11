@@ -7,8 +7,13 @@
 //!   `LinuxEasyHotspot` NetworkManager connection, plus its own IFB device;
 //! - after polkit authorizes the caller for `…shape` (admin, cached per session).
 //!
+//! It also tells the app its clients' names (see `names`): read-only, same
+//! interface check, polkit `…monitor`.
+//!
 //! When the hotspot goes down it removes its rules by itself, and it exits
 //! after a minute of idleness with nothing shaped.
+
+mod names;
 
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -28,7 +33,7 @@ const OBJECT_PATH: &str = "/io/github/OWNER/LinuxEasyHotspot/Shaper";
 const ACTION_SHAPE: &str = "io.github.OWNER.LinuxEasyHotspot.shape";
 /// Reading counters / removing our own rules: active local user.
 const ACTION_MONITOR: &str = "io.github.OWNER.LinuxEasyHotspot.monitor";
-const API_LEVEL: u32 = 1;
+const API_LEVEL: u32 = 2;
 const IDLE_EXIT: Duration = Duration::from_secs(60);
 const WATCH_EVERY: Duration = Duration::from_secs(5);
 
@@ -37,6 +42,8 @@ struct Inner {
     /// Interface we currently shape and the MAC order used for class ids.
     shaped: Option<(String, Vec<String>)>,
     last_activity: Option<Instant>,
+    /// DHCP name snooping on the hotspot's bridge (Bridge mode).
+    snooper: Option<names::Snooper>,
 }
 
 struct Shaper {
@@ -242,7 +249,7 @@ impl Shaper {
 
     #[zbus(property)]
     fn features(&self) -> Vec<String> {
-        ["htb", "ifb", "counters", "approval"]
+        ["htb", "ifb", "counters", "approval", "names"]
             .map(String::from)
             .to_vec()
     }
@@ -367,6 +374,40 @@ impl Shaper {
             })
             .collect())
     }
+
+    /// Client names for the hotspot on `iface` (the AP interface):
+    /// MAC → (hostname, IPv4), empty strings when unknown. API level 2.
+    async fn client_names(
+        &self,
+        #[zbus(header)] hdr: Header<'_>,
+        #[zbus(connection)] conn: &Connection,
+        iface: String,
+    ) -> fdo::Result<names::Names> {
+        authorize(conn, &hdr, ACTION_MONITOR, false).await?;
+        guard(conn, &iface).await?;
+        let mut inner = self.inner.lock().await;
+        inner.last_activity = Some(Instant::now());
+        let Some(bridge) = names::bridge_of(&iface) else {
+            inner.snooper = None;
+            drop(inner);
+            return Ok(names::lease_names(&iface).await);
+        };
+        if inner
+            .snooper
+            .as_ref()
+            .is_none_or(|s| s.ap_iface != iface || s.bridge != bridge)
+        {
+            inner.snooper = None;
+            let s = names::Snooper::start(iface, bridge)
+                .map_err(|e| fdo::Error::Failed(format!("listening for DHCP requests: {e}")))?;
+            inner.snooper = Some(s);
+        }
+        Ok(inner
+            .snooper
+            .as_ref()
+            .map(names::Snooper::names)
+            .unwrap_or_default())
+    }
 }
 
 fn is_root() -> bool {
@@ -430,6 +471,16 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             clear_iface(&iface).await;
             g.shaped = None;
             g.last_activity = Some(Instant::now());
+        }
+        if let Some((ap, bridge)) = g
+            .snooper
+            .as_ref()
+            .map(|s| (s.ap_iface.clone(), s.bridge.clone()))
+            && (names::bridge_of(&ap).as_deref() != Some(bridge.as_str())
+                || !is_hotspot_iface(&conn, &ap).await)
+        {
+            tracing::info!(ap, "hotspot gone; stopping name listener");
+            g.snooper = None;
         }
         let idle = g.last_activity.is_none_or(|t| t.elapsed() > IDLE_EXIT);
         if g.shaped.is_none() && idle {

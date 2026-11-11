@@ -25,6 +25,9 @@ trait Shaper {
 
     fn counters(&self, iface: &str) -> zbus::Result<HashMap<String, (u64, u64)>>;
 
+    /// API level 2: MAC → (hostname, IPv4 or "") seen by the helper.
+    fn client_names(&self, iface: &str) -> zbus::Result<HashMap<String, (String, String)>>;
+
     #[zbus(property)]
     fn api_level(&self) -> zbus::Result<u32>;
 }
@@ -138,4 +141,14 @@ pub async fn counters(
 ) -> Result<HashMap<String, (u64, u64)>, ShaperError> {
     let p = ShaperProxy::new(conn).await.map_err(map_err)?;
     p.counters(iface).await.map_err(map_err)
+}
+
+/// Client names the helper learned (DHCP requests in Bridge mode, the lease
+/// file in Router mode) for the hotspot on `ap_iface`.
+pub async fn client_names(
+    conn: &Connection,
+    ap_iface: &str,
+) -> Result<HashMap<String, (String, String)>, ShaperError> {
+    let p = ShaperProxy::new(conn).await.map_err(map_err)?;
+    p.client_names(ap_iface).await.map_err(map_err)
 }
