@@ -49,7 +49,7 @@ impl ksni::Tray for Tray {
     }
 
     fn title(&self) -> String {
-        "LinuxEasyHotspot".into()
+        leh_model::APP_NAME.into()
     }
 
     fn icon_name(&self) -> String {
@@ -76,7 +76,7 @@ impl ksni::Tray for Tray {
 
     fn tool_tip(&self) -> ksni::ToolTip {
         ksni::ToolTip {
-            title: "LinuxEasyHotspot".into(),
+            title: leh_model::APP_NAME.into(),
             description: status_line(&self.state),
             ..Default::default()
         }

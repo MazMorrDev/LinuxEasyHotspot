@@ -29,7 +29,7 @@ fn entry() -> String {
     format!(
         "[Desktop Entry]\n\
          Type=Application\n\
-         Name=LinuxEasyHotspot\n\
+         Name=Linux Easy Hotspot\n\
          Comment=Wi-Fi hotspot (starts in the background)\n\
          Exec={}\n\
          Icon={}\n\

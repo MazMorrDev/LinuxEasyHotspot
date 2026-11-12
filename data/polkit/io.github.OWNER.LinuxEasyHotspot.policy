@@ -2,7 +2,7 @@
 <!DOCTYPE policyconfig PUBLIC "-//freedesktop//DTD PolicyKit Policy Configuration 1.0//EN"
  "http://www.freedesktop.org/standards/PolicyKit/1/policyconfig.dtd">
 <policyconfig>
-  <vendor>LinuxEasyHotspot</vendor>
+  <vendor>Linux Easy Hotspot</vendor>
   <icon_name>network-wireless-hotspot-symbolic</icon_name>
 
   <action id="io.github.OWNER.LinuxEasyHotspot.shape">

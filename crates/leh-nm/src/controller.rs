@@ -12,7 +12,8 @@ use futures_util::{Stream, StreamExt, stream};
 use leh_model::state::{self, ac_state};
 use leh_model::{
     AP_PROFILE_ID, BRIDGE_PORT_PROFILE_ID, BRIDGE_PROFILE_ID, ErrorKind, Event, HotspotConfig,
-    HotspotState, Mode, NmCapabilities, NmVersion, ProfileIds, settings,
+    HotspotState, Mode, NmCapabilities, NmVersion, ProfileIds, is_ap_profile_id,
+    is_bridge_port_profile_id, is_bridge_profile_id, legacy, settings,
 };
 use tokio::sync::{mpsc, watch};
 use zbus::Connection;
@@ -306,8 +307,8 @@ impl Actor {
             };
             let Ok(ac) = ac.build().await else { continue };
             match ac.id().await.as_deref() {
-                Ok(AP_PROFILE_ID) => ours = Some((path, ac)),
-                Ok(BRIDGE_PROFILE_ID) => bridge_active = true,
+                Ok(id) if is_ap_profile_id(id) => ours = Some((path, ac)),
+                Ok(id) if is_bridge_profile_id(id) => bridge_active = true,
                 _ => {}
             }
         }
@@ -481,16 +482,24 @@ impl Actor {
             .or_else(|_| std::env::var("LOGNAME"))
             .map_err(|_| call_error("could not determine the current user name"))?;
 
-        let find = |uuid: Option<String>, id: &'static str| async move {
-            profiles::find(conn, uuid.as_deref(), id)
+        let find = |uuid: Option<String>, ids: [&'static str; 2]| async move {
+            profiles::find(conn, uuid.as_deref(), &ids)
                 .await
                 .map_err(call_error)
         };
-        let ap = find(cfg.profile_uuid.clone(), AP_PROFILE_ID).await?;
+        let ap = find(
+            cfg.profile_uuid.clone(),
+            [AP_PROFILE_ID, legacy::AP_PROFILE_ID],
+        )
+        .await?;
         let (bridge, port) = if cfg.mode == Mode::Bridge {
             (
-                find(None, BRIDGE_PROFILE_ID).await?,
-                find(None, BRIDGE_PORT_PROFILE_ID).await?,
+                find(None, [BRIDGE_PROFILE_ID, legacy::BRIDGE_PROFILE_ID]).await?,
+                find(
+                    None,
+                    [BRIDGE_PORT_PROFILE_ID, legacy::BRIDGE_PORT_PROFILE_ID],
+                )
+                .await?,
             )
         } else {
             (None, None)
@@ -641,10 +650,11 @@ impl Actor {
                     continue;
                 };
                 let Ok(ac) = b.build().await else { continue };
-                if matches!(
-                    ac.id().await.as_deref(),
-                    Ok(BRIDGE_PROFILE_ID | BRIDGE_PORT_PROFILE_ID)
-                ) {
+                if ac
+                    .id()
+                    .await
+                    .is_ok_and(|id| is_bridge_profile_id(&id) || is_bridge_port_profile_id(&id))
+                {
                     let _ = nm.deactivate_connection(&path.as_ref()).await;
                 }
             }
@@ -673,7 +683,7 @@ async fn previous_profile(conn: &Connection, dev: &DeviceInfo) -> Option<OwnedOb
         .build()
         .await
         .ok()?;
-    if ac.id().await.ok()?.as_str() == BRIDGE_PORT_PROFILE_ID {
+    if is_bridge_port_profile_id(&ac.id().await.ok()?) {
         return None;
     }
     ac.connection().await.ok()

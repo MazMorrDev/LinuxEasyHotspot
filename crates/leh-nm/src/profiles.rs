@@ -40,14 +40,15 @@ pub struct Profile {
     pub uuid: String,
 }
 
-/// Finds a profile by UUID first, then by `connection.id`.
+/// Finds a profile by UUID first, then by `connection.id` (any of `ids`,
+/// in order of preference).
 pub async fn find(
     conn: &Connection,
     uuid: Option<&str>,
-    id: &str,
+    ids: &[&str],
 ) -> zbus::Result<Option<Profile>> {
     let settings = SettingsProxy::new(conn).await?;
-    let mut by_id = None;
+    let mut by_id: Option<(usize, Profile)> = None;
     for path in settings.list_connections().await? {
         let c = SettingsConnectionProxy::builder(conn)
             .path(path.clone())?
@@ -70,11 +71,13 @@ pub async fn find(
         if uuid == Some(c_uuid.as_str()) {
             return Ok(Some(Profile { path, uuid: c_uuid }));
         }
-        if c_id == id && by_id.is_none() {
-            by_id = Some(Profile { path, uuid: c_uuid });
+        if let Some(rank) = ids.iter().position(|i| *i == c_id)
+            && by_id.as_ref().is_none_or(|(r, _)| rank < *r)
+        {
+            by_id = Some((rank, Profile { path, uuid: c_uuid }));
         }
     }
-    Ok(by_id)
+    Ok(by_id.map(|(_, p)| p))
 }
 
 /// Updates `existing` in place, or adds a new persistent profile.

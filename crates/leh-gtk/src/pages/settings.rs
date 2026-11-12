@@ -466,7 +466,7 @@ impl SettingsPage {
             self.total_down.row.set_sensitive(speed_ok);
             self.total_up.row.set_sensitive(speed_ok);
             self.speed.set_description(Some(if !speed_ok {
-                tr("Needs the LinuxEasyHotspot helper.")
+                tr("Needs the Linux Easy Hotspot helper.")
             } else {
                 tr("Limits for the whole hotspot. Set them to your real connection speed for priorities to work well.")
             }));

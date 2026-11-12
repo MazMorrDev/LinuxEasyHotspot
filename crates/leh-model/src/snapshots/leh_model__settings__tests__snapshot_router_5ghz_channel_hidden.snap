@@ -69,7 +69,7 @@ expression: "ap_profile(&c, &caps(46), &ids())"
     },
     "id": {
       "type": "str",
-      "value": "LinuxEasyHotspot"
+      "value": "Linux Easy Hotspot"
     },
     "interface-name": {
       "type": "str",

@@ -61,7 +61,7 @@ expression: "ap_profile(&cfg(Mode::LocalOnly), &caps(52), &ids())"
     },
     "id": {
       "type": "str",
-      "value": "LinuxEasyHotspot"
+      "value": "Linux Easy Hotspot"
     },
     "interface-name": {
       "type": "str",

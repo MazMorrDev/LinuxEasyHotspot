@@ -27,7 +27,7 @@ verify() {
   for _ in 1 2 3 4 5; do
     if busctl get-property "$ID.Shaper" /io/github/OWNER/LinuxEasyHotspot/Shaper \
         "$ID.Shaper1" ApiLevel >/dev/null 2>&1; then
-      echo "✔ Helper installed and responding. LinuxEasyHotspot will pick it up within a few seconds."
+      echo "✔ Helper installed and responding. Linux Easy Hotspot will pick it up within a few seconds."
       return 0
     fi
     sleep 1

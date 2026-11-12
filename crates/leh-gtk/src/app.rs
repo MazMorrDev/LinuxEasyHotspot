@@ -263,7 +263,7 @@ impl App {
             HelperStatus::TooOld => (
                 tr("Update the helper"),
                 tr(
-                    "Your LinuxEasyHotspot helper is older than this app. Update it with your system's software updater, or run:\n\nsudo apt install --only-upgrade linuxeasyhotspot",
+                    "Your Linux Easy Hotspot helper is older than this app. Update it with your system's software updater, or run:\n\nsudo apt install --only-upgrade linuxeasyhotspot",
                 ),
             ),
             _ => (tr("Helper ready"), tr("Per-device control is available.")),
@@ -376,7 +376,7 @@ fn status_page_for(p: Problem) -> (&'static str, &'static str, &'static str, &'s
             "network-error-symbolic",
             tr("NetworkManager is required"),
             tr(
-                "LinuxEasyHotspot creates hotspots through NetworkManager 1.30 or newer, which isn't running on this system.",
+                "Linux Easy Hotspot creates hotspots through NetworkManager 1.30 or newer, which isn't running on this system.",
             ),
             tr("Learn more"),
         ),
@@ -437,7 +437,7 @@ fn build_menu(demo: bool) -> gio::Menu {
     }
     let rest = gio::Menu::new();
     rest.append(Some(tr("Keyboard Shortcuts")), Some("win.shortcuts"));
-    rest.append(Some(tr("About LinuxEasyHotspot")), Some("win.about"));
+    rest.append(Some(tr("About Linux Easy Hotspot")), Some("win.about"));
     menu.append_section(None, &rest);
     menu
 }
@@ -497,7 +497,7 @@ impl App {
         let d = adw::AlertDialog::new(
             Some(tr("Restart to change the language")),
             Some(tr(
-                "LinuxEasyHotspot needs to restart to show the new language. A running hotspot keeps working.",
+                "Linux Easy Hotspot needs to restart to show the new language. A running hotspot keeps working.",
             )),
         );
         d.add_response("later", tr("Later"));
@@ -873,15 +873,15 @@ impl App {
             Msg::GoTo(p) => self.view_stack.set_visible_child_name(p),
             Msg::About => {
                 let helper = match self.state.helper {
-                    HelperStatus::Ready => tr("Helper: installed (API level 1)"),
+                    HelperStatus::Ready => tr("Helper: installed"),
                     HelperStatus::Missing => tr("Helper: not installed"),
                     HelperStatus::Unauthorized => tr("Helper: installed, not authorized"),
                     HelperStatus::TooOld => tr("Helper: needs an update"),
                 };
                 let about = adw::AboutDialog::builder()
-                    .application_name("LinuxEasyHotspot")
+                    .application_name(leh_model::APP_NAME)
                     .application_icon(crate::APP_ID)
-                    .developer_name(tr("LinuxEasyHotspot contributors"))
+                    .developer_name(tr("Linux Easy Hotspot contributors"))
                     .version(env!("CARGO_PKG_VERSION"))
                     .comments(format!(
                         "{}\n\n{helper}",
@@ -904,7 +904,7 @@ impl SimpleComponent for App {
 
     fn init_root() -> Self::Root {
         adw::ApplicationWindow::builder()
-            .title("LinuxEasyHotspot")
+            .title(leh_model::APP_NAME)
             .default_width(420)
             .default_height(640)
             .width_request(360)
@@ -1202,11 +1202,11 @@ impl SimpleComponent for App {
         let (title, button) = match s.helper {
             HelperStatus::Ready => ("", None),
             HelperStatus::Missing => (
-                tr("Per-device speed limits need the LinuxEasyHotspot helper"),
+                tr("Per-device speed limits need the Linux Easy Hotspot helper"),
                 Some(tr("Set up…")),
             ),
             HelperStatus::Unauthorized => (
-                tr("Allow LinuxEasyHotspot to manage speed limits"),
+                tr("Allow Linux Easy Hotspot to manage speed limits"),
                 Some(tr("Authorize")),
             ),
             HelperStatus::TooOld => (
