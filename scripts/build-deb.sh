@@ -3,7 +3,8 @@
 # The package contains the app and the leh-shaper helper, so per-device
 # speed limits work right after `sudo apt install ./linuxeasyhotspot_*.deb`.
 #
-# Needs: cargo, dpkg-deb, dpkg-shlibdeps (package dpkg-dev), fakeroot.
+# Needs: cargo, dpkg-deb, dpkg-shlibdeps (package dpkg-dev), fakeroot,
+# libgtk-4-dev and libadwaita-1-dev.
 set -euo pipefail
 ROOT=$(cd "$(dirname "$0")/.." && pwd)
 ID=io.github.OWNER.LinuxEasyHotspot
@@ -14,6 +15,8 @@ fail() { echo "✖ $*" >&2; exit 1; }
 for t in dpkg-deb dpkg-shlibdeps fakeroot; do
   command -v "$t" >/dev/null || fail "$t not found (sudo apt install dpkg-dev fakeroot)"
 done
+pkg-config --exists gtk4 libadwaita-1 2>/dev/null \
+  || fail "GTK 4 / libadwaita development files not found (sudo apt install libgtk-4-dev libadwaita-1-dev)"
 CARGO=${CARGO:-$(command -v cargo || echo "$HOME/.cargo/bin/cargo")}
 [ -x "$CARGO" ] || fail "cargo not found (install Rust from https://rustup.rs)"
 

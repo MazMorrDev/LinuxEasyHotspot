@@ -763,7 +763,7 @@ checksum = "20870f649af7073d53e38067b2a84312175d56ea15217e1b15bc83506ec50afb"
 
 [[package]]
 name = "leh-model"
-version = "0.1.1"
+version = "0.2.0"
 dependencies = [
  "insta",
  "proptest",
@@ -776,7 +776,7 @@ dependencies = [
 
 [[package]]
 name = "leh-nm"
-version = "0.1.1"
+version = "0.2.0"
 dependencies = [
  "futures-util",
  "leh-model",
@@ -791,7 +791,7 @@ dependencies = [
 
 [[package]]
 name = "leh-shaper"
-version = "0.1.1"
+version = "0.2.0"
 dependencies = [
  "leh-model",
  "leh-nm",
@@ -848,7 +848,7 @@ checksum = "32a66949e030da00e8c7d4434b251670a91556f4144941d37452769c25d58a53"
 
 [[package]]
 name = "linuxeasyhotspot"
-version = "0.1.1"
+version = "0.2.0"
 dependencies = [
  "futures-util",
  "ksni",

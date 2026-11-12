@@ -2,7 +2,7 @@
 
 The simplest way to turn your Linux computer into a Wi-Fi hotspot. Press one button, scan a QR code with your phone, and you're connected.
 
-> **Status:** early development (0.1.1). Router mode, the GTK interface, per-device control, startup options and the `.deb` package work on real hardware; Bridge and Local-only still need field testing.
+> **Status:** early development (0.2.0). Router mode, the GTK interface, per-device control, startup options and the `.deb` package work on real hardware; Bridge and Local-only still need field testing.
 
 ## Features
 

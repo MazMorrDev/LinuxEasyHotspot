@@ -4,6 +4,12 @@ All notable changes are documented here. The format follows [Keep a Changelog](h
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-11-12
+
+A larger update: clearer device management, usage at a glance, a session log, USB Wi-Fi adapters, a Bridge mode that keeps this computer on the local network, and the end of the repeated authorization banner.
+
+**Upgrading:** the helper changed (API level 3) and must be updated together with the app. Installing the new `.deb` does it; from source, use **Update now** on the banner or run `./scripts/install-helper.sh`. Until then, per-device control is paused and the app asks for the update.
+
 ### Added
 - Home: a *Session activity* log under the QR code and buttons while the hotspot runs: start and stop (with the data used), devices connecting and disconnecting, approval requests, devices allowed, blocked or forgotten, data caps reached, Wi-Fi adapters plugged in or out, errors and authorization changes. It starts fresh with each session.
 - Clients: the hotspot's current speed and the data used since it started (all devices together, read from the Wi-Fi interface's counters, no helper needed).
@@ -15,6 +21,10 @@ All notable changes are documented here. The format follows [Keep a Changelog](h
 ### Changed
 - The app is now called "Linux Easy Hotspot" (window title, About, tray, menus, desktop entry, NetworkManager profiles). Profiles named "LinuxEasyHotspot…" are still recognized and renamed on the next start.
 - Helper API level 3; the app asks to update an older helper.
+- Clients: long device names are shortened with "…" instead of wrapping letter by letter, and every device (also without the helper) opens its settings.
+- The Bridge mode dialog explains what happens to the wired connection and how to keep sharing files (e.g. with Warpinator).
+- `scripts/build-deb.sh` checks for the GTK 4 and libadwaita development packages before building, instead of failing at the link step.
+- Spanish translation updated for all new and renamed strings.
 
 ### Fixed
 - The "Allow Linux Easy Hotspot to manage speed limits" banner kept coming back. The helper answered `AccessDenied` (which the app reads as "not authorized") whenever its check of the hotspot interface hit a transient D-Bus error, e.g. another connection disappearing mid-scan, or when polkit couldn't be reached. Only polkit refusals are `AccessDenied` now; the check skips vanished connections and retries; the app retries temporary failures quietly and a refusal once before showing the banner. The helper's watchdog also no longer removes all rules after a single failed check.
