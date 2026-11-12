@@ -6,7 +6,9 @@ use leh_model::policy::{Access, Priority};
 use leh_model::tc::ShapeDevice;
 use zbus::{Connection, proxy};
 
-pub const API_LEVEL_NEEDED: u32 = 1;
+/// 3: knows the "Linux Easy Hotspot" profile names and only answers
+/// `AccessDenied` when polkit refuses.
+pub const API_LEVEL_NEEDED: u32 = 3;
 
 #[proxy(
     interface = "io.github.OWNER.LinuxEasyHotspot.Shaper1",
@@ -44,6 +46,9 @@ pub enum ShaperError {
     /// polkit said no (user cancelled the password dialog, or not allowed).
     Denied,
     Missing,
+    /// The hotspot interface isn't (or is no longer) the hotspot's, e.g.
+    /// right after it started or while it stops. Worth retrying shortly.
+    NotReady,
     Other(String),
 }
 
@@ -52,23 +57,46 @@ impl std::fmt::Display for ShaperError {
         match self {
             Self::Denied => f.write_str("not authorized"),
             Self::Missing => f.write_str("helper not installed"),
+            Self::NotReady => f.write_str("the hotspot isn't ready"),
             Self::Other(e) => f.write_str(e),
         }
     }
 }
 
+/// Classifies a helper error from its D-Bus error name and message.
+pub fn classify(name: &str, message: &str) -> ShaperError {
+    let short = name.rsplit('.').next().unwrap_or(name);
+    // Helpers before API level 3 also answered AccessDenied when the
+    // interface check failed or polkit couldn't be reached.
+    let not_hotspot = message.contains("not-hotspot:")
+        || message.contains("is not running the LinuxEasyHotspot hotspot");
+    match short {
+        _ if not_hotspot => ShaperError::NotReady,
+        "AccessDenied" if message.starts_with("polkit:") => ShaperError::Other(message.to_owned()),
+        "AccessDenied" => ShaperError::Denied,
+        "ServiceUnknown" => ShaperError::Missing,
+        _ => ShaperError::Other(if message.is_empty() {
+            name.to_owned()
+        } else {
+            message.to_owned()
+        }),
+    }
+}
+
 fn map_err(e: zbus::Error) -> ShaperError {
     match &e {
-        zbus::Error::MethodError(name, _, _) => match name.as_str() {
-            "org.freedesktop.DBus.Error.AccessDenied" => ShaperError::Denied,
-            "org.freedesktop.DBus.Error.ServiceUnknown" => ShaperError::Missing,
-            _ => ShaperError::Other(e.to_string()),
-        },
-        zbus::Error::FDO(f) => match **f {
-            zbus::fdo::Error::AccessDenied(_) => ShaperError::Denied,
-            zbus::fdo::Error::ServiceUnknown(_) => ShaperError::Missing,
-            _ => ShaperError::Other(e.to_string()),
-        },
+        zbus::Error::MethodError(name, msg, _) => {
+            classify(name.as_str(), msg.as_deref().unwrap_or_default())
+        }
+        zbus::Error::FDO(f) => {
+            let (name, msg) = match &**f {
+                zbus::fdo::Error::AccessDenied(m) => ("AccessDenied", m.as_str()),
+                zbus::fdo::Error::ServiceUnknown(m) => ("ServiceUnknown", m.as_str()),
+                zbus::fdo::Error::Failed(m) => ("Failed", m.as_str()),
+                _ => return ShaperError::Other(e.to_string()),
+            };
+            classify(name, msg)
+        }
         _ => ShaperError::Other(e.to_string()),
     }
 }
@@ -151,4 +179,39 @@ pub async fn client_names(
 ) -> Result<HashMap<String, (String, String)>, ShaperError> {
     let p = ShaperProxy::new(conn).await.map_err(map_err)?;
     p.client_names(ap_iface).await.map_err(map_err)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn only_polkit_refusals_are_denials() {
+        let ad = "org.freedesktop.DBus.Error.AccessDenied";
+        assert_eq!(
+            classify(ad, "not authorized to manage hotspot speed limits"),
+            ShaperError::Denied
+        );
+        // Old helpers: the interface check and polkit errors were AccessDenied too.
+        assert_eq!(
+            classify(ad, "wlp3s0 is not running the LinuxEasyHotspot hotspot"),
+            ShaperError::NotReady
+        );
+        assert!(matches!(
+            classify(ad, "polkit: timeout"),
+            ShaperError::Other(_)
+        ));
+        // Current helper.
+        assert_eq!(
+            classify(
+                "org.freedesktop.DBus.Error.Failed",
+                "not-hotspot: wlp3s0 is not running the Linux Easy Hotspot hotspot"
+            ),
+            ShaperError::NotReady
+        );
+        assert_eq!(
+            classify("org.freedesktop.DBus.Error.ServiceUnknown", ""),
+            ShaperError::Missing
+        );
+    }
 }

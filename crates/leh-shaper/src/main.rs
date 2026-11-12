@@ -1,11 +1,15 @@
-//! `leh-shaper`: privileged traffic-control helper for LinuxEasyHotspot.
+//! `leh-shaper`: privileged traffic-control helper for Linux Easy Hotspot.
 //!
 //! A system D-Bus service started on demand (as root). It only ever:
 //! - accepts a *structured* desired state, validated and turned into `tc`
 //!   commands by `leh_model::tc` (no command strings, no shell);
 //! - acts on an interface that currently belongs to the active
-//!   `LinuxEasyHotspot` NetworkManager connection, plus its own IFB device;
-//! - after polkit authorizes the caller for `…shape` (admin, cached per session).
+//!   "Linux Easy Hotspot" NetworkManager connection, plus its own IFB device;
+//! - after polkit authorizes the caller for `…shape` (the active local user).
+//!
+//! Errors: `AccessDenied` means *only* "polkit said no", because the app
+//! asks the user to authorize again when it sees it. Everything else
+//! (the hotspot interface is changing, polkit unreachable…) is `Failed`.
 //!
 //! It also tells the app its clients' names (see `names`): read-only, same
 //! interface check, polkit `…monitor`.
@@ -33,9 +37,17 @@ const OBJECT_PATH: &str = "/io/github/OWNER/LinuxEasyHotspot/Shaper";
 const ACTION_SHAPE: &str = "io.github.OWNER.LinuxEasyHotspot.shape";
 /// Reading counters / removing our own rules: active local user.
 const ACTION_MONITOR: &str = "io.github.OWNER.LinuxEasyHotspot.monitor";
-const API_LEVEL: u32 = 2;
+/// 3: profiles renamed to "Linux Easy Hotspot" (legacy names still
+/// accepted); `AccessDenied` is reserved for polkit refusals.
+const API_LEVEL: u32 = 3;
 const IDLE_EXIT: Duration = Duration::from_secs(60);
 const WATCH_EVERY: Duration = Duration::from_secs(5);
+/// Consecutive watchdog checks that must find the hotspot gone before its
+/// rules are removed (one failed D-Bus read is not "gone").
+const GONE_AFTER: u32 = 2;
+/// Prefix of the `Failed` error for "this isn't the hotspot interface";
+/// the app treats it as temporary.
+const NOT_HOTSPOT: &str = "not-hotspot:";
 
 #[derive(Default)]
 struct Inner {
@@ -108,10 +120,11 @@ async fn authorize(
     );
     let details: HashMap<&str, &str> = HashMap::new();
     let flags: u32 = u32::from(interactive); // 1 = AllowUserInteraction
+    // A polkit that can't be reached is a failure, not a refusal.
     let (authorized, _challenge, _details): (bool, bool, HashMap<String, String>) = polkit
         .call("CheckAuthorization", &(subject, action, details, flags, ""))
         .await
-        .map_err(|e| fdo::Error::AccessDenied(format!("polkit: {e}")))?;
+        .map_err(|e| fdo::Error::Failed(format!("polkit: {e}")))?;
     if authorized {
         Ok(())
     } else {
@@ -121,28 +134,55 @@ async fn authorize(
     }
 }
 
-/// True if `iface` belongs to the active LinuxEasyHotspot connection.
-async fn is_hotspot_iface(conn: &Connection, iface: &str) -> bool {
-    let check = async {
-        let nm = NetworkManagerProxy::new(conn).await?;
-        for path in nm.active_connections().await? {
-            let ac = ActiveConnectionProxy::builder(conn)
-                .path(path)?
+/// One pass over NM's active connections. `Err` when NM couldn't be read;
+/// a single connection that vanished mid-scan (VPNs, containers…) is skipped.
+async fn scan_hotspot_iface(conn: &Connection, iface: &str) -> zbus::Result<bool> {
+    use zbus::proxy::CacheProperties;
+    let nm = NetworkManagerProxy::builder(conn)
+        .cache_properties(CacheProperties::No)
+        .build()
+        .await?;
+    for path in nm.active_connections().await? {
+        let Ok(b) = ActiveConnectionProxy::builder(conn).path(path) else {
+            continue;
+        };
+        let Ok(ac) = b.cache_properties(CacheProperties::No).build().await else {
+            continue;
+        };
+        if !ac
+            .id()
+            .await
+            .is_ok_and(|id| leh_model::is_ap_profile_id(&id))
+        {
+            continue;
+        }
+        for dev in ac.devices().await? {
+            let d = DeviceProxy::builder(conn)
+                .path(dev)?
+                .cache_properties(CacheProperties::No)
                 .build()
                 .await?;
-            if ac.id().await.ok().as_deref() != Some(leh_model::AP_PROFILE_ID) {
-                continue;
-            }
-            for dev in ac.devices().await? {
-                let d = DeviceProxy::builder(conn).path(dev)?.build().await?;
-                if d.interface().await? == iface {
-                    return Ok::<bool, zbus::Error>(true);
-                }
+            if d.interface().await? == iface {
+                return Ok(true);
             }
         }
-        Ok(false)
-    };
-    check.await.unwrap_or(false)
+    }
+    Ok(false)
+}
+
+/// True if `iface` belongs to the active Linux Easy Hotspot connection.
+/// Read errors are retried briefly before giving up.
+async fn is_hotspot_iface(conn: &Connection, iface: &str) -> bool {
+    for attempt in 0..3 {
+        match scan_hotspot_iface(conn, iface).await {
+            Ok(found) => return found,
+            Err(e) => {
+                tracing::debug!(iface, attempt, error = %e, "reading NM failed");
+                tokio::time::sleep(Duration::from_millis(250)).await;
+            }
+        }
+    }
+    false
 }
 
 async fn guard(conn: &Connection, iface: &str) -> fdo::Result<()> {
@@ -152,8 +192,8 @@ async fn guard(conn: &Connection, iface: &str) -> fdo::Result<()> {
         )));
     }
     if !is_hotspot_iface(conn, iface).await {
-        return Err(fdo::Error::AccessDenied(format!(
-            "{iface} is not running the LinuxEasyHotspot hotspot"
+        return Err(fdo::Error::Failed(format!(
+            "{NOT_HOTSPOT} {iface} is not running the Linux Easy Hotspot hotspot"
         )));
     }
     Ok(())
@@ -451,6 +491,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut term = tokio::signal::unix::signal(tokio::signal::unix::SignalKind::terminate())?;
 
     // Watchdog: clean up when the hotspot goes away; exit when idle.
+    let mut misses = 0;
     loop {
         tokio::select! {
             () = tokio::time::sleep(WATCH_EVERY) => {}
@@ -464,13 +505,19 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             }
         }
         let mut g = inner.lock().await;
-        if let Some((iface, _)) = g.shaped.clone()
-            && !is_hotspot_iface(&conn, &iface).await
-        {
-            tracing::info!(iface, "hotspot gone; removing rules");
-            clear_iface(&iface).await;
-            g.shaped = None;
-            g.last_activity = Some(Instant::now());
+        if let Some((iface, _)) = g.shaped.clone() {
+            if is_hotspot_iface(&conn, &iface).await {
+                misses = 0;
+            } else {
+                misses += 1;
+                if misses >= GONE_AFTER {
+                    tracing::info!(iface, "hotspot gone; removing rules");
+                    clear_iface(&iface).await;
+                    g.shaped = None;
+                    g.last_activity = Some(Instant::now());
+                    misses = 0;
+                }
+            }
         }
         if let Some((ap, bridge)) = g
             .snooper

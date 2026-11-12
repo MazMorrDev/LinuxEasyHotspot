@@ -276,7 +276,17 @@ pub struct Shaping {
     counters_task: Option<JoinHandle<()>>,
     last_raw: HashMap<String, (u64, u64)>,
     last_sample: Option<Instant>,
+    /// Failed attempts at the current desired state.
+    attempts: u32,
 }
+
+/// How often to retry an update the helper refused, and after how long.
+/// A refusal is re-tried once before asking the user to authorize: it can
+/// be a session that wasn't active for a moment (login, user switch).
+const DENIED_RETRIES: u32 = 1;
+/// "Not the hotspot interface yet/anymore": the hotspot is changing state.
+const NOT_READY_RETRIES: u32 = 5;
+const OTHER_RETRIES: u32 = 1;
 
 /// Computes the desired helper state from the view-model.
 pub fn desired(st: &UiState) -> Option<Desired> {
@@ -340,6 +350,7 @@ impl Live {
         }
         self.shaping.wanted = d;
         self.shaping.generation += 1;
+        self.shaping.attempts = 0;
         let (tx, generation) = (self.tx.clone(), self.shaping.generation);
         runtime().spawn(async move {
             tokio::time::sleep(Duration::from_millis(300)).await;
@@ -355,6 +366,17 @@ impl Live {
     /// Forget what was sent so the next sync re-applies (e.g. after "Authorize").
     pub fn reset_shaping(&mut self) {
         self.shaping.wanted = None;
+    }
+
+    /// Sends the current desired state again after `delay`, unless it
+    /// changes in the meantime.
+    fn retry_shaping(&mut self, delay: Duration) {
+        self.shaping.attempts += 1;
+        let (tx, generation) = (self.tx.clone(), self.shaping.generation);
+        runtime().spawn(async move {
+            tokio::time::sleep(delay).await;
+            tx.emit(Msg::ShapeFlush(generation));
+        });
     }
 
     pub fn flush_shaping(&mut self, generation: u64) {
@@ -393,8 +415,10 @@ impl Live {
         applied: bool,
         res: Result<(), ShaperError>,
     ) -> Option<String> {
+        let attempts = self.shaping.attempts;
         match res {
             Ok(()) => {
+                self.shaping.attempts = 0;
                 self.shaping.last_raw.clear();
                 self.shaping.last_sample = Some(Instant::now());
                 if applied {
@@ -408,9 +432,28 @@ impl Live {
                 }
                 None
             }
+            Err(ShaperError::Denied) if attempts < DENIED_RETRIES => {
+                self.retry_shaping(Duration::from_secs(4));
+                None
+            }
             Err(ShaperError::Denied) => {
                 st.helper = HelperStatus::Unauthorized;
                 self.shaping.wanted = None;
+                None
+            }
+            Err(ShaperError::NotReady) if attempts < NOT_READY_RETRIES => {
+                self.retry_shaping(Duration::from_secs(2));
+                None
+            }
+            Err(ShaperError::NotReady) => {
+                eprintln!(
+                    "shaping: the helper doesn't see the hotspot interface; giving up for now"
+                );
+                None
+            }
+            Err(ShaperError::Other(e)) if attempts < OTHER_RETRIES => {
+                eprintln!("shaping: {e}; retrying");
+                self.retry_shaping(Duration::from_secs(5));
                 None
             }
             Err(ShaperError::Missing) => {
