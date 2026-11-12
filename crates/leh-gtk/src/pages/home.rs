@@ -48,6 +48,10 @@ pub struct HomePage {
     pw_text: Rc<RefCell<String>>,
     last_run: Cell<RunState>,
     stop: gtk::Button,
+    /// Session activity under the QR code and buttons.
+    activity: gtk::Box,
+    activity_list: gtk::ListBox,
+    activity_shown: Cell<u64>,
     qr_payload: RefCell<String>,
     guard: Guard,
 }
@@ -287,6 +291,22 @@ impl HomePage {
         on_grid.attach(&head, 0, 0, 1, 1);
         on_grid.attach(&qr_box, 0, 1, 1, 1);
         on_grid.attach(&details, 0, 2, 1, 1);
+
+        // Session activity (newest first).
+        let activity_title = gtk::Label::builder()
+            .label(tr("Session activity"))
+            .halign(gtk::Align::Start)
+            .css_classes(["heading"])
+            .build();
+        let activity_list = gtk::ListBox::builder()
+            .selection_mode(gtk::SelectionMode::None)
+            .css_classes(["boxed-list"])
+            .build();
+        let activity = gtk::Box::new(gtk::Orientation::Vertical, 8);
+        activity.set_hexpand(true);
+        activity.append(&activity_title);
+        activity.append(&activity_list);
+        on_grid.attach(&activity, 0, 3, 1, 1);
         let on = gtk::Box::new(gtk::Orientation::Vertical, 0);
         on.append(&on_grid);
 
@@ -335,6 +355,9 @@ impl HomePage {
             pw_text,
             last_run: Cell::new(RunState::Off),
             stop,
+            activity,
+            activity_list,
+            activity_shown: Cell::new(u64::MAX),
             qr_payload: RefCell::new(String::new()),
             guard,
         }
@@ -348,6 +371,8 @@ impl HomePage {
             .expect("grid has a layout manager");
         let qr = lm.layout_child(&self.on_qr);
         let details = lm.layout_child(&self.on_details);
+        let activity = lm.layout_child(&self.activity);
+        bp.add_setter(&activity, "column-span", Some(&2.to_value()));
         bp.add_setter(&qr, "column", Some(&1.to_value()));
         bp.add_setter(&qr, "row", Some(&0.to_value()));
         bp.add_setter(&qr, "row-span", Some(&3.to_value()));
@@ -414,6 +439,10 @@ impl HomePage {
             self.scan_label
                 .set_label(&trf("Scan to join “{name}”", &[("name", &s.cfg.ssid)]));
             self.stop.set_sensitive(s.run == RunState::On);
+            if self.activity_shown.get() != s.events_seq {
+                self.render_activity(s);
+                self.activity_shown.set(s.events_seq);
+            }
             let payload = leh_model::qr::payload(&s.cfg.ssid, &s.cfg.password, s.cfg.hidden);
             if *self.qr_payload.borrow() != payload {
                 self.qr.set_paintable(qr::texture(&payload, 240).as_ref());
@@ -421,6 +450,37 @@ impl HomePage {
             }
         }
         self.last_run.set(s.run);
+    }
+}
+
+impl HomePage {
+    fn render_activity(&self, s: &UiState) {
+        self.activity_list.remove_all();
+        if s.events.is_empty() {
+            let row = adw::ActionRow::builder()
+                .title(tr("Nothing has happened yet"))
+                .build();
+            row.add_css_class("dim-label");
+            self.activity_list.append(&row);
+            return;
+        }
+        for e in s.events.iter().rev() {
+            let row = adw::ActionRow::builder()
+                .title(relm4::gtk::glib::markup_escape_text(&e.text).as_str())
+                .build();
+            let icon = gtk::Image::from_icon_name(e.kind.icon_name());
+            if let Some(c) = e.kind.css_class() {
+                icon.add_css_class(c);
+            }
+            row.add_prefix(&icon);
+            let time = gtk::Label::builder()
+                .label(&e.time)
+                .valign(gtk::Align::Center)
+                .css_classes(["caption", "numeric", "dim-label"])
+                .build();
+            row.add_suffix(&time);
+            self.activity_list.append(&row);
+        }
     }
 }
 

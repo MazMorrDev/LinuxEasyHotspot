@@ -1173,6 +1173,7 @@ impl SimpleComponent for App {
         if args.running && live.is_none() {
             state.run = RunState::On;
             demo::tick(&mut state);
+            demo::seed_events(&mut state);
         }
         if let Some(p) = &args.page {
             view_stack.set_visible_child_name(p);
@@ -1221,7 +1222,9 @@ impl SimpleComponent for App {
     fn update(&mut self, msg: Msg, sender: ComponentSender<Self>) {
         let before = self.state.cfg.clone();
         let store_before = self.device_store();
+        let digest = crate::activity::Digest::of(&self.state);
         self.handle(msg, &sender);
+        crate::activity::record(&digest, &mut self.state);
         if self.live.is_some() {
             if self.state.cfg != before {
                 crate::config_store::save(&self.state.cfg);

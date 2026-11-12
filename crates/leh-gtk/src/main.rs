@@ -1,5 +1,6 @@
 //! LinuxEasyHotspot GTK app.
 
+mod activity;
 mod app;
 mod autostart;
 mod config_store;

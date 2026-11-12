@@ -279,6 +279,10 @@ pub struct UiState {
     pub clients: Vec<ClientVm>,
     /// Whole-hotspot usage this session.
     pub traffic: Traffic,
+    /// What happened this session, oldest first (see `activity`).
+    pub events: Vec<crate::activity::SessionEvent>,
+    /// Bumped on every change to `events`, so the list redraws only then.
+    pub events_seq: u64,
     pub policies: BTreeMap<String, DevicePolicy>,
     pub open_device: Option<String>,
     /// Driven by the real NetworkManager (not `--demo`).
@@ -802,6 +806,8 @@ pub mod demo {
             tray_available: true,
             clients: clients(),
             traffic: Traffic::default(),
+            events: Vec::new(),
+            events_seq: 0,
             policies: policies(),
             open_device: None,
             live: false,
@@ -835,6 +841,44 @@ pub mod demo {
         t.up_kbps = state.clients.iter().map(|c| c.up_kbps).sum();
         t.down_bytes += (t.down_kbps * 1000.0 / 8.0) as u64;
         t.up_bytes += (t.up_kbps * 1000.0 / 8.0) as u64;
+    }
+
+    /// A plausible session so far, for `--demo --running`.
+    pub fn seed_events(st: &mut UiState) {
+        use crate::activity::EventKind;
+        st.log(
+            EventKind::Started,
+            trf(
+                "Hotspot on: {details}",
+                &[(
+                    "details",
+                    &format!("“{}” · {} · {}", st.cfg.ssid, tr("Router"), {
+                        AdapterVm::new("wlp2s0", true, false).label()
+                    }),
+                )],
+            ),
+        );
+        for name in ["Pixel-8", "thinkpad"] {
+            st.log(
+                EventKind::Joined,
+                trf("{name} connected", &[("name", &format!("“{name}”"))]),
+            );
+        }
+        st.log(
+            EventKind::Waiting,
+            trf("{name} wants to join", &[("name", "“Galaxy-S24”")]),
+        );
+        st.log(
+            EventKind::Blocked,
+            trf("{name} blocked", &[("name", "“Living-room TV”")]),
+        );
+        st.log(
+            EventKind::Warning,
+            trf(
+                "{name} reached its data cap",
+                &[("name", &format!("“{}”", tr("Unknown device")))],
+            ),
+        );
     }
 
     pub fn new_device() -> ClientVm {
