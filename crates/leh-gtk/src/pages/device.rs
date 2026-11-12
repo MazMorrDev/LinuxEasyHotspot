@@ -6,7 +6,7 @@ use relm4::adw::prelude::*;
 use relm4::{Sender, adw, gtk};
 
 use crate::app::Msg;
-use crate::state::{UiState, fmt_bytes, fmt_rate};
+use crate::state::{UiState, fmt_bytes, fmt_last_seen, fmt_rate};
 use crate::widgets::{Guard, LimitsEditor, combo, group, set_combo, set_text, switch_row};
 
 const ACCESS: [Access; 3] = [Access::Allowed, Access::Pending, Access::Blocked];
@@ -155,41 +155,53 @@ impl DeviceDialog {
     }
 
     pub fn update(&self, s: &UiState) {
-        let Some(c) = s.client(&self.mac) else {
+        // Known devices can be edited while they're away; forgotten ones can't.
+        let client = s.client(&self.mac);
+        if client.is_none() && !s.policies.contains_key(&self.mac) {
             self.dialog.close();
             return;
-        };
-        let pol = s.policy(&c.mac);
+        }
+        let pol = s.policy(&self.mac);
         let lim = pol.limits(&s.defaults);
-        let eff = s.effective(c);
-        self.dialog.set_title(&s.display_name(c));
-        self.rates.set_label(&format!(
-            "↓ {}   ↑ {}",
-            fmt_rate(c.down_kbps),
-            fmt_rate(c.up_kbps)
-        ));
-        match lim.cap_mb {
-            Some(cap) => {
-                let frac = c.session_bytes as f64 / (f64::from(cap) * 1e6);
-                let mut text = trf(
-                    "This session: {used} of {cap}",
-                    &[
-                        ("used", &fmt_bytes(c.session_bytes)),
-                        ("cap", &fmt_bytes(u64::from(cap) * 1_000_000)),
-                    ],
-                );
-                if eff.cap_reached {
-                    text.push_str(tr(" · cap reached"));
+        let name = s.known_name(&self.mac);
+        self.dialog.set_title(&name);
+        match client {
+            Some(c) => {
+                let eff = s.effective(c);
+                self.rates.set_label(&format!(
+                    "↓ {}   ↑ {}",
+                    fmt_rate(c.down_kbps),
+                    fmt_rate(c.up_kbps)
+                ));
+                match lim.cap_mb {
+                    Some(cap) => {
+                        let frac = c.session_bytes as f64 / (f64::from(cap) * 1e6);
+                        let mut text = trf(
+                            "This session: {used} of {cap}",
+                            &[
+                                ("used", &fmt_bytes(c.session_bytes)),
+                                ("cap", &fmt_bytes(u64::from(cap) * 1_000_000)),
+                            ],
+                        );
+                        if eff.cap_reached {
+                            text.push_str(tr(" · cap reached"));
+                        }
+                        self.usage.set_label(&text);
+                        self.level.set_value(frac.min(1.0));
+                        self.level.set_visible(true);
+                    }
+                    None => {
+                        self.usage.set_label(&trf(
+                            "This session: {used}",
+                            &[("used", &fmt_bytes(c.session_bytes))],
+                        ));
+                        self.level.set_visible(false);
+                    }
                 }
-                self.usage.set_label(&text);
-                self.level.set_value(frac.min(1.0));
-                self.level.set_visible(true);
             }
             None => {
-                self.usage.set_label(&trf(
-                    "This session: {used}",
-                    &[("used", &fmt_bytes(c.session_bytes))],
-                ));
+                self.rates.set_label(tr("Not connected"));
+                self.usage.set_label(&fmt_last_seen(pol.last_seen));
                 self.level.set_visible(false);
             }
         }
@@ -201,7 +213,7 @@ impl DeviceDialog {
                 .state_flags()
                 .contains(gtk::StateFlags::FOCUS_WITHIN)
             {
-                set_text(&self.name, &s.display_name(c));
+                set_text(&self.name, &name);
             }
             let idx = ACCESS.iter().position(|a| *a == pol.access).unwrap_or(0);
             set_combo(&self.access, idx as u32);
@@ -209,12 +221,20 @@ impl DeviceDialog {
                 self.follow.set_active(pol.follow_defaults);
             }
         });
-        let vendor = c.vendor.unwrap_or(tr("Unknown vendor"));
-        self.address.set_subtitle(&format!(
-            "{} · {} · {vendor}",
-            c.ip.as_deref().unwrap_or(tr("no address")),
-            c.mac
-        ));
+        let vendor = leh_model::clients::Client {
+            mac: self.mac.clone(),
+            ..Default::default()
+        }
+        .vendor()
+        .unwrap_or(tr("Unknown vendor"));
+        self.address.set_subtitle(&match client {
+            Some(c) => format!(
+                "{} · {} · {vendor}",
+                c.ip.as_deref().unwrap_or(tr("no address")),
+                self.mac
+            ),
+            None => format!("{} · {vendor}", self.mac),
+        });
         self.limits.set_sensitive(!pol.follow_defaults);
         self.limits.set(lim);
     }

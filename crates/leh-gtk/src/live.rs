@@ -16,7 +16,8 @@ use tokio::task::JoinHandle;
 
 use crate::app::Msg;
 use crate::state::{
-    ClientVm, DeviceIcon, HelperStatus, Problem, RunState, UiState, UplinkKind, UplinkVm,
+    ClientVm, DeviceIcon, HelperStatus, Problem, RunState, Traffic, UiState, UplinkKind, UplinkVm,
+    now_secs,
 };
 
 pub fn runtime() -> &'static Runtime {
@@ -34,6 +35,11 @@ pub struct Live {
     pub controller: Controller,
     tx: Sender<Msg>,
     clients_task: Option<JoinHandle<()>>,
+    /// Polls the hotspot interface's byte counters while it runs.
+    traffic_task: Option<JoinHandle<()>>,
+    /// Previous (rx, tx, when) sample of those counters, and the first one.
+    traffic_last: Option<(u64, u64, Instant)>,
+    traffic_base: Option<(u64, u64)>,
     /// Error the user already dismissed; not shown again until it changes.
     dismissed: Option<HotspotState>,
     last: Snapshot,
@@ -62,6 +68,9 @@ impl Live {
             controller,
             tx,
             clients_task: None,
+            traffic_task: None,
+            traffic_last: None,
+            traffic_base: None,
             dismissed: None,
             last: Snapshot::default(),
             shaping: Shaping::default(),
@@ -154,7 +163,7 @@ impl Live {
             crate::config_store::save(&st.cfg);
         }
 
-        // Watch clients only while the hotspot is up.
+        // Watch clients and traffic only while the hotspot is up.
         match (&snap.state, &snap.running) {
             (HotspotState::Active, Some(run)) if self.clients_task.is_none() => {
                 let mut scope = run.client_scope();
@@ -167,13 +176,26 @@ impl Live {
                         tx.emit(Msg::Clients(list));
                     }
                 }));
+                self.start_traffic(run.ap_iface.clone());
             }
             (HotspotState::Active, _) => {}
             _ => {
                 if let Some(t) = self.clients_task.take() {
                     t.abort();
                 }
-                st.clients.clear();
+                if let Some(t) = self.traffic_task.take() {
+                    t.abort();
+                }
+                self.traffic_last = None;
+                self.traffic_base = None;
+                st.traffic = Traffic::default();
+                // Remember when the devices that were connected left.
+                let now = now_secs();
+                for c in st.clients.drain(..) {
+                    if let Some(p) = st.policies.get_mut(&c.mac) {
+                        p.last_seen = Some(now);
+                    }
+                }
             }
         }
         self.last = snap;
@@ -183,6 +205,66 @@ impl Live {
         self.dismissed = None;
         self.controller.start(cfg.clone());
     }
+
+    /// Reads the AP interface's byte counters every 2 seconds. They count
+    /// all hotspot traffic (every device, with or without the helper).
+    fn start_traffic(&mut self, iface: String) {
+        let tx = self.tx.clone();
+        self.traffic_last = None;
+        self.traffic_base = None;
+        self.traffic_task = Some(runtime().spawn(async move {
+            loop {
+                if let Some((rx, txb)) = iface_bytes(&iface).await {
+                    tx.emit(Msg::IfaceBytes(rx, txb));
+                }
+                tokio::time::sleep(Duration::from_secs(2)).await;
+            }
+        }));
+    }
+
+    /// Folds a counter sample into session totals and current rates.
+    /// `rx` is what devices sent (upload), `tx` what they received (download).
+    pub fn on_iface_bytes(&mut self, st: &mut UiState, rx: u64, tx: u64) {
+        let now = Instant::now();
+        // Counters restart if the interface was re-created.
+        if self
+            .traffic_last
+            .is_some_and(|(lrx, ltx, _)| rx < lrx || tx < ltx)
+        {
+            self.traffic_last = None;
+            self.traffic_base = None;
+        }
+        let (brx, btx) = *self.traffic_base.get_or_insert((rx, tx));
+        st.traffic.up_bytes = rx - brx;
+        st.traffic.down_bytes = tx - btx;
+        if let Some((lrx, ltx, t)) = self.traffic_last {
+            let secs = now.duration_since(t).as_secs_f64().max(0.5);
+            st.traffic.up_kbps = (rx - lrx) as f64 * 8.0 / 1000.0 / secs;
+            st.traffic.down_kbps = (tx - ltx) as f64 * 8.0 / 1000.0 / secs;
+        }
+        self.traffic_last = Some((rx, tx, now));
+    }
+}
+
+/// `(rx_bytes, tx_bytes)` of a network interface.
+async fn iface_bytes(iface: &str) -> Option<(u64, u64)> {
+    let dir = std::path::Path::new("/sys/class/net")
+        .join(iface)
+        .join("statistics");
+    let read = |f: &'static str| {
+        let p = dir.join(f);
+        async move {
+            tokio::fs::read_to_string(p)
+                .await
+                .ok()?
+                .trim()
+                .parse::<u64>()
+                .ok()
+        }
+    };
+    Some((read("rx_bytes").await?, read("tx_bytes").await?))
+}
+
 }
 
 fn guess_icon(c: &Client) -> DeviceIcon {
@@ -227,6 +309,7 @@ pub fn initial_state(cfg: HotspotConfig) -> UiState {
     st.cfg = cfg;
     st.live = true;
     st.adapters.clear();
+    st.traffic = Traffic::default();
     st.ethernet.clear();
     st.uplinks.clear();
     st.nm_version = "?".into();
@@ -519,14 +602,20 @@ impl Live {
 /// of new devices that are waiting for approval.
 pub fn merge_clients(st: &mut UiState, list: &[Client]) -> Vec<String> {
     let mut waiting = Vec::new();
-    let old: HashMap<String, ClientVm> = st.clients.drain(..).map(|c| (c.mac.clone(), c)).collect();
+    let mut old: HashMap<String, ClientVm> =
+        st.clients.drain(..).map(|c| (c.mac.clone(), c)).collect();
+    let now = now_secs();
     for c in list {
         let mut vm = client_vm(c);
-        if let Some(prev) = old.get(&vm.mac) {
-            vm.session_bytes = prev.session_bytes;
-            vm.down_kbps = prev.down_kbps;
-            vm.up_kbps = prev.up_kbps;
-        }
+        let joined = match old.remove(&vm.mac) {
+            Some(prev) => {
+                vm.session_bytes = prev.session_bytes;
+                vm.down_kbps = prev.down_kbps;
+                vm.up_kbps = prev.up_kbps;
+                false
+            }
+            None => true,
+        };
         if !st.policies.contains_key(&vm.mac) {
             let p = leh_model::policy::DevicePolicy::new_device(&st.defaults);
             if p.access == Access::Pending && st.helper == HelperStatus::Ready {
@@ -534,7 +623,23 @@ pub fn merge_clients(st: &mut UiState, list: &[Client]) -> Vec<String> {
             }
             st.policies.insert(vm.mac.clone(), p);
         }
+        // Remember the device's name and when it was here, for the list of
+        // known devices (written to devices.toml only on changes).
+        if let Some(p) = st.policies.get_mut(&vm.mac) {
+            if vm.hostname.is_some() && p.hostname != vm.hostname {
+                p.hostname = vm.hostname.clone();
+            }
+            if joined {
+                p.last_seen = Some(now);
+            }
+        }
         st.clients.push(vm);
+    }
+    // Devices that just left.
+    for mac in old.keys() {
+        if let Some(p) = st.policies.get_mut(mac) {
+            p.last_seen = Some(now);
+        }
     }
     waiting
 }

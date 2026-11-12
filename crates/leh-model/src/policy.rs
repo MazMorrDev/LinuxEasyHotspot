@@ -59,6 +59,11 @@ pub struct DefaultPolicy {
 pub struct DevicePolicy {
     /// User-chosen name, overrides the hostname.
     pub alias: Option<String>,
+    /// Name the device reported last time it was connected, so it can be
+    /// recognized in the list while it is away.
+    pub hostname: Option<String>,
+    /// When the device was last connected (Unix time, seconds).
+    pub last_seen: Option<u64>,
     pub access: Access,
     /// While true, `limits` is ignored and the current defaults apply.
     pub follow_defaults: bool,
@@ -69,6 +74,8 @@ impl Default for DevicePolicy {
     fn default() -> Self {
         Self {
             alias: None,
+            hostname: None,
+            last_seen: None,
             access: Access::Allowed,
             follow_defaults: true,
             limits: Limits::default(),

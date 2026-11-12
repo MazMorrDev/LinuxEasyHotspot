@@ -95,6 +95,8 @@ pub enum Msg {
     ShapeResult(bool, Result<(), leh_nm::shaper_client::ShaperError>),
     /// Live mode: per-device byte counters.
     Counters(std::collections::HashMap<String, (u64, u64)>),
+    /// Live mode: the hotspot interface's (rx, tx) byte counters.
+    IfaceBytes(u64, u64),
     ShowWindow,
     Quit,
     TrayStarted(Box<crate::tray::TrayHandle>),
@@ -859,6 +861,11 @@ impl App {
             Msg::Counters(map) => {
                 if let Some(live) = &mut self.live {
                     live.on_counters(st, map);
+                }
+            }
+            Msg::IfaceBytes(rx, tx) => {
+                if let Some(live) = &mut self.live {
+                    live.on_iface_bytes(st, rx, tx);
                 }
             }
             Msg::Page(p) => {

@@ -54,6 +54,17 @@ impl DeviceIcon {
     }
 }
 
+/// Traffic of the whole hotspot while it runs (all devices together).
+#[derive(Debug, Clone, Copy, PartialEq, Default)]
+pub struct Traffic {
+    /// Bytes sent to devices / received from them this session.
+    pub down_bytes: u64,
+    pub up_bytes: u64,
+    /// Current rates, kbit/s.
+    pub down_kbps: f64,
+    pub up_kbps: f64,
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum UplinkKind {
     Ethernet,
@@ -157,6 +168,8 @@ pub struct UiState {
     pub helper: HelperStatus,
     pub tray_available: bool,
     pub clients: Vec<ClientVm>,
+    /// Whole-hotspot usage this session.
+    pub traffic: Traffic,
     pub policies: BTreeMap<String, DevicePolicy>,
     pub open_device: Option<String>,
     /// Driven by the real NetworkManager (not `--demo`).
@@ -181,6 +194,39 @@ impl UiState {
             .and_then(|p| p.alias.clone())
             .or_else(|| c.hostname.clone())
             .unwrap_or_else(|| tr("Unknown device").into())
+    }
+
+    /// Name of a known device, connected or not.
+    pub fn known_name(&self, mac: &str) -> String {
+        if let Some(c) = self.client(mac) {
+            return self.display_name(c);
+        }
+        self.policies
+            .get(mac)
+            .and_then(|p| p.alias.clone().or_else(|| p.hostname.clone()))
+            .unwrap_or_else(|| tr("Unknown device").into())
+    }
+
+    /// Devices connected right now (none while the hotspot is off).
+    pub fn online_clients(&self) -> &[ClientVm] {
+        if self.run == RunState::On {
+            &self.clients
+        } else {
+            &[]
+        }
+    }
+
+    /// Devices remembered in `devices.toml` that aren't connected now,
+    /// most recently seen first.
+    pub fn offline_devices(&self) -> Vec<(&String, &DevicePolicy)> {
+        let online = self.online_clients();
+        let mut v: Vec<_> = self
+            .policies
+            .iter()
+            .filter(|(mac, _)| !online.iter().any(|c| &c.mac == *mac))
+            .collect();
+        v.sort_by(|a, b| b.1.last_seen.cmp(&a.1.last_seen).then(a.0.cmp(b.0)));
+        v
     }
 
     pub fn client(&self, mac: &str) -> Option<&ClientVm> {
@@ -285,8 +331,48 @@ pub fn fmt_bytes(b: u64) -> String {
     let mb = b as f64 / 1_000_000.0;
     if mb >= 1000.0 {
         format!("{:.1} GB", mb / 1000.0)
-    } else {
+    } else if mb >= 10.0 {
         format!("{mb:.0} MB")
+    } else {
+        format!("{mb:.1} MB")
+    }
+}
+
+pub fn now_secs() -> u64 {
+    std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map_or(0, |d| d.as_secs())
+}
+
+/// "Last connected 5 minutes ago" for devices that aren't connected.
+pub fn fmt_last_seen(last_seen: Option<u64>) -> String {
+    let Some(t) = last_seen else {
+        return tr("Not connected").into();
+    };
+    let ago = now_secs().saturating_sub(t);
+    if ago < 60 {
+        tr("Last connected just now").into()
+    } else if ago < 3600 {
+        let n = (ago / 60) as usize;
+        tr_n(
+            "Last connected {n} minute ago",
+            "Last connected {n} minutes ago",
+            n,
+        )
+    } else if ago < 86_400 {
+        let n = (ago / 3600) as usize;
+        tr_n(
+            "Last connected {n} hour ago",
+            "Last connected {n} hours ago",
+            n,
+        )
+    } else {
+        let n = (ago / 86_400) as usize;
+        tr_n(
+            "Last connected {n} day ago",
+            "Last connected {n} days ago",
+            n,
+        )
     }
 }
 
@@ -510,6 +596,24 @@ pub mod demo {
                 ..DevicePolicy::default()
             },
         );
+        // Known devices that aren't connected right now.
+        m.insert(
+            "f0:18:98:00:00:10".into(),
+            DevicePolicy {
+                hostname: Some("MacBook-de-Ana".into()),
+                last_seen: Some(super::now_secs() - 2 * 3600),
+                ..DevicePolicy::default()
+            },
+        );
+        m.insert(
+            "a8:5e:45:00:00:11".into(),
+            DevicePolicy {
+                hostname: Some("ESP32-sensor".into()),
+                last_seen: Some(super::now_secs() - 3 * 86_400),
+                access: Access::Blocked,
+                ..DevicePolicy::default()
+            },
+        );
         m
     }
 
@@ -568,6 +672,7 @@ pub mod demo {
             helper: HelperStatus::Ready,
             tray_available: true,
             clients: clients(),
+            traffic: Traffic::default(),
             policies: policies(),
             open_device: None,
             live: false,
@@ -596,6 +701,11 @@ pub mod demo {
             c.up_kbps = cap(c.demand_kbps.1 * jitter, eff.up_kbps);
             c.session_bytes += ((c.down_kbps + c.up_kbps) * 1000.0 / 8.0) as u64;
         }
+        let t = &mut state.traffic;
+        t.down_kbps = state.clients.iter().map(|c| c.down_kbps).sum();
+        t.up_kbps = state.clients.iter().map(|c| c.up_kbps).sum();
+        t.down_bytes += (t.down_kbps * 1000.0 / 8.0) as u64;
+        t.up_bytes += (t.up_kbps * 1000.0 / 8.0) as u64;
     }
 
     pub fn new_device() -> ClientVm {
