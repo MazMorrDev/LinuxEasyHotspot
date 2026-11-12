@@ -1,12 +1,12 @@
-# The LinuxEasyHotspot helper (`leh-shaper`)
+# The Linux Easy Hotspot helper (`leh-shaper`)
 
-Per-device speed limits, priorities, approval of new devices, data caps and total hotspot speed all need Linux traffic control (`tc`), which needs root. LinuxEasyHotspot keeps the app unprivileged and puts that one job in a small helper.
+Per-device speed limits, priorities, approval of new devices, data caps and total hotspot speed all need Linux traffic control (`tc`), which needs root. Linux Easy Hotspot keeps the app unprivileged and puts that one job in a small helper.
 
 ## Install
 
 **With the .deb package:** nothing to do. `linuxeasyhotspot_*.deb` (built by `./scripts/build-deb.sh`) contains the helper and its D-Bus and polkit files.
 
-**From source:** in LinuxEasyHotspot, open Settings or Clients, press **Set up…** on the banner, then **Install now**. The app builds the helper and your desktop asks for your password once.
+**From source:** in Linux Easy Hotspot, open Settings or Clients, press **Set up…** on the banner, then **Install now**. The app builds the helper and your desktop asks for your password once.
 
 **From a terminal** (the same dialog has a **Copy** button for this command):
 
@@ -32,11 +32,12 @@ The app notices the helper within a few seconds; there's no need to restart it.
 ## What it can and can't do
 
 - **Input:** it accepts only a *structured* request: an interface, totals, and a list of (MAC, access, down, up, priority). `leh_model::tc` validates the request and turns it into commands. It never accepts command strings, and nothing goes through a shell.
-- **Scope:** it only touches an interface that currently belongs to the active `LinuxEasyHotspot` NetworkManager connection, plus its own `lehifb0` device.
+- **Scope:** it only touches an interface that currently belongs to the active `Linux Easy Hotspot` NetworkManager connection (or `LinuxEasyHotspot`, its name up to 0.1.1), plus its own `lehifb0` device.
 - **Permissions:** every call is checked with polkit.
   - `…shape` (change limits) and `…monitor` (read usage, remove its rules) are allowed for the active local desktop user. This matches NetworkManager's own rule, which already lets that user create the hotspot.
   - Remote and inactive sessions are refused. Administrators can tighten this with a polkit rule.
-- **Cleanup:** it removes its rules when the hotspot stops (even if the app crashed) or when it gets SIGTERM (package removal, shutdown), and exits after a minute of idleness.
+  - The helper answers `AccessDenied` only when polkit refuses; that is the one case where the app shows **Authorize**. Temporary problems (the hotspot is starting or stopping, NetworkManager or polkit busy) are `Failed` errors, which the app retries quietly. The app needs helper API level 3 or newer and asks for an update otherwise.
+- **Cleanup:** it removes its rules when the hotspot stops (even if the app crashed; it waits for two checks in a row, so a single failed read of NetworkManager doesn't wipe them) or when it gets SIGTERM (package removal, shutdown), and exits after a minute of idleness.
 
 ## Device names
 
@@ -50,7 +51,7 @@ The app names devices by itself where it can (reverse DNS against NM's dnsmasq, 
 - **Download** (to a device): an HTB class per device on the hotspot interface, matched by MAC.
 - **Upload** (from a device): incoming traffic is redirected to `lehifb0`, which has the same classes.
 - **Devices waiting for approval, or blocked:** they get DHCP (so the app can show their name) and nothing else.
-- **Usage and live speeds:** read from the class byte counters every 3 seconds.
+- **Usage and live speeds:** per device, read from the class byte counters every 3 seconds. The hotspot's total (all devices together, shown at the top of Clients) doesn't need the helper: the app reads the Wi-Fi interface's own counters in `/sys/class/net/<iface>/statistics`.
 - **Units:** the app stores speeds in kbit/s and caps in MB. What you type in the app ("2,5 MB/s", "800 kbps", "1 GB") is converted by `leh_model::units`; speeds must be between 8 kbit/s and 10 Gbit/s.
 
 To check what's applied:

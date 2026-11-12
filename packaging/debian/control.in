@@ -9,12 +9,13 @@ Section: net
 Priority: optional
 Homepage: https://github.com/OWNER/LinuxEasyHotspot
 Description: Share your internet over Wi-Fi in one click
- LinuxEasyHotspot creates a Wi-Fi hotspot through NetworkManager with as
+ Linux Easy Hotspot creates a Wi-Fi hotspot through NetworkManager with as
  few steps as possible: network name, password and a QR code to join.
  .
  It supports Router (NAT), Bridge and Local-only modes, choosing the
  Wi-Fi adapter, band, channel and internet source, and shows the
- connected devices.
+ connected and remembered devices, with the hotspot's total and current
+ data usage. USB Wi-Fi adapters are detected when plugged in.
  .
  Per-device speed limits, priority, approval of new devices and data
  caps are provided by the included leh-shaper helper, a small

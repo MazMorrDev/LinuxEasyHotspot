@@ -4,6 +4,22 @@ All notable changes are documented here. The format follows [Keep a Changelog](h
 
 ## [Unreleased]
 
+### Added
+- Home: a *Session activity* log under the QR code and buttons while the hotspot runs: start and stop (with the data used), devices connecting and disconnecting, approval requests, devices allowed, blocked or forgotten, data caps reached, Wi-Fi adapters plugged in or out, errors and authorization changes. It starts fresh with each session.
+- Clients: the hotspot's current speed and the data used since it started (all devices together, read from the Wi-Fi interface's counters, no helper needed).
+- Clients: every known device, connected or not, listed under *Allowed* and *Blocked* (and *Waiting for approval*), each opening its settings. Works while the hotspot is off. `devices.toml` now remembers each device's name and when it was last connected.
+- Wi-Fi adapters plugged in or out while the app runs are picked up (NetworkManager `DeviceAdded`/`DeviceRemoved`), with a notice.
+- Settings explains adapters that can't run a hotspot: no access-point mode in the driver, not managed by NetworkManager, unavailable, and USB Wi-Fi sticks with no driver or still in "storage mode" (with the `usb-modeswitch` fix). Also shown on the "can't create hotspots" page.
+- Hotspot adapter *Automatic* prefers a free USB adapter; adapters are shown as "USB adapter (wlx…)" / "Built-in Wi-Fi (wlp…)" with their bands and product name. Home shows when the hotspot runs on a USB adapter.
+
+### Changed
+- The app is now called "Linux Easy Hotspot" (window title, About, tray, menus, desktop entry, NetworkManager profiles). Profiles named "LinuxEasyHotspot…" are still recognized and renamed on the next start.
+- Helper API level 3; the app asks to update an older helper.
+
+### Fixed
+- The "Allow Linux Easy Hotspot to manage speed limits" banner kept coming back. The helper answered `AccessDenied` (which the app reads as "not authorized") whenever its check of the hotspot interface hit a transient D-Bus error, e.g. another connection disappearing mid-scan, or when polkit couldn't be reached. Only polkit refusals are `AccessDenied` now; the check skips vanished connections and retries; the app retries temporary failures quietly and a refusal once before showing the banner. The helper's watchdog also no longer removes all rules after a single failed check.
+- Bridge mode cut this computer off the local network: the bridge got a new MAC, so the router gave it a different IP, and static IP/DNS settings of the wired connection were dropped. The bridge now takes over the Ethernet card's MAC and the wired profile's IP settings, and STP is off (it blocked all traffic for several seconds after each start).
+
 ## [0.1.1] - 2026-11-10
 
 ### Fixed

@@ -1,4 +1,4 @@
-# LinuxEasyHotspot
+# Linux Easy Hotspot
 
 The simplest way to turn your Linux computer into a Wi-Fi hotspot. Press one button, scan a QR code with your phone, and you're connected.
 
@@ -9,17 +9,17 @@ The simplest way to turn your Linux computer into a Wi-Fi hotspot. Press one but
 - One-click start/stop, with a QR code so phones can join by scanning.
 - An auto-generated, easy-to-read password and a name based on your computer's hostname.
 - **Router** mode: devices share this computer's internet (NAT).
-- **Bridge** mode: devices join your wired network directly.
+- **Bridge** mode: devices join your wired network directly. This computer keeps its address on the LAN (the bridge takes over the Ethernet card's MAC and IP settings).
 - **Local-only** mode: devices can talk to each other but not to the internet (needs NetworkManager 1.52 or later).
-- Choice of Wi-Fi adapter, band (2.4/5 GHz) and channel, plus a hidden-network option.
-- A list of connected devices.
+- Choice of Wi-Fi adapter, band (2.4/5 GHz) and channel, plus a hidden-network option. *Automatic* prefers a USB adapter; adapters plugged in while the app runs are picked up, and ones that can't be used (no AP mode, no driver, USB stick still in "storage mode") are explained in Settings.
+- Clients: the hotspot's current speed and data used, devices waiting for approval, and every known device (connected or not) in *Allowed* and *Blocked* lists, each with its own settings.
 - Per-device speed limits (type any value and pick kbps, Mbps, Gbps, KB/s or MB/s), priority, approval of new devices and data caps.
 - A tray icon, launch at login, and an option to start the hotspot at login.
 - English and Spanish interface.
 
 ## How it works
 
-LinuxEasyHotspot doesn't run its own access-point daemon. It creates and manages a NetworkManager connection profile over D-Bus, so:
+Linux Easy Hotspot doesn't run its own access-point daemon. It creates and manages a NetworkManager connection profile over D-Bus, so:
 
 - creating and stopping the hotspot needs no root password,
 - it doesn't conflict with your existing network setup,
