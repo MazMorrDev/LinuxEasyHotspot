@@ -17,6 +17,7 @@ pub mod ssid;
 pub mod state;
 pub mod tc;
 pub mod units;
+pub mod usb;
 
 pub use caps::{NmCapabilities, NmVersion};
 pub use config::{Band, ConfigError, HotspotConfig, Language, Mode};

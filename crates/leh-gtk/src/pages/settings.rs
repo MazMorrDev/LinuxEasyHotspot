@@ -22,6 +22,8 @@ pub struct SettingsPage {
     pub root: adw::PreferencesPage,
     mode_rows: Vec<(Mode, adw::ActionRow, gtk::CheckButton)>,
     adapter: adw::ComboRow,
+    /// Why some Wi-Fi adapters can't be used.
+    adapter_note: gtk::Label,
     upstream: adw::ComboRow,
     source_note: gtk::Label,
     band: adw::ComboRow,
@@ -39,7 +41,8 @@ pub struct SettingsPage {
     tray: adw::SwitchRow,
     language: adw::ComboRow,
     /// Rendered lists, to rebuild combo models only when they change.
-    adapters_shown: RefCell<Vec<String>>,
+    /// (iface or None for automatic, label) currently in the adapter combo.
+    adapters_shown: SourceList,
     /// (iface or None for automatic, label) currently in the combo.
     upstreams_shown: SourceList,
     band_shown: Cell<Option<Band>>,
@@ -108,6 +111,15 @@ impl SettingsPage {
         crate::widgets::short_display(&upstream);
         crate::widgets::short_display(&adapter);
         adapters.add(&adapter);
+        let adapter_note = gtk::Label::builder()
+            .wrap(true)
+            .xalign(0.0)
+            .margin_top(8)
+            .margin_bottom(8)
+            .css_classes(["caption", "dim-label"])
+            .visible(false)
+            .build();
+        adapters.add(&adapter_note);
         adapters.add(&upstream);
         let source_note = gtk::Label::builder()
             .wrap(true)
@@ -118,17 +130,16 @@ impl SettingsPage {
             .build();
         adapters.add(&source_note);
         let upstreams_shown: SourceList = Rc::default();
+        let adapters_shown: SourceList = Rc::default();
         root.add(&adapters);
-        let (g, t) = (guard.clone(), tx.clone());
+        let (g, t, shown) = (guard.clone(), tx.clone(), adapters_shown.clone());
         adapter.connect_selected_notify(move |r| {
             if g.active() {
                 return;
             }
-            let name = r
-                .selected_item()
-                .and_downcast::<gtk::StringObject>()
-                .map(|s| s.string().split(' ').next().unwrap_or_default().to_owned());
-            t.emit(Msg::Adapter(name));
+            if let Some((iface, _)) = shown.borrow().get(r.selected() as usize) {
+                t.emit(Msg::Adapter(iface.clone()));
+            }
         });
         let (g, t, shown) = (guard.clone(), tx.clone(), upstreams_shown.clone());
         upstream.connect_selected_notify(move |r| {
@@ -292,6 +303,7 @@ impl SettingsPage {
             root,
             mode_rows,
             adapter,
+            adapter_note,
             upstream,
             source_note,
             band,
@@ -308,7 +320,7 @@ impl SettingsPage {
             start_at_login,
             tray,
             language,
-            adapters_shown: RefCell::default(),
+            adapters_shown,
             upstreams_shown,
             band_shown: Cell::new(None),
             guard,
@@ -335,31 +347,57 @@ impl SettingsPage {
                 }
             }
 
-            // Adapters
-            let adapters: Vec<String> = s
-                .adapters
-                .iter()
-                .map(|(i, five)| {
-                    format!("{i} {}", if *five { tr("(2.4 + 5 GHz)") } else { tr("(2.4 GHz)") })
-                })
-                .collect();
-            if *self.adapters_shown.borrow() != adapters {
-                let refs: Vec<&str> = adapters.iter().map(String::as_str).collect();
-                self.adapter.set_model(Some(&gtk::StringList::new(&refs)));
-                *self.adapters_shown.borrow_mut() = adapters;
+            // Adapters: "Automatic" first, then every AP-capable adapter.
+            let mut adapters: Vec<(Option<String>, String)> = Vec::new();
+            if s.adapters.len() > 1 {
+                adapters.push((None, tr("Automatic (prefers a USB adapter)").into()));
             }
-            let ai = s
-                .adapters
+            adapters.extend(s.adapters.iter().map(|a| (Some(a.iface.clone()), a.label())));
+            // A configured adapter that's unplugged stays visible.
+            if let Some(i) = s.cfg.ap_iface.as_deref()
+                && !s.adapters.iter().any(|a| a.iface == i)
+            {
+                adapters.push((
+                    Some(i.to_owned()),
+                    trf("{iface} (not connected)", &[("iface", i)]),
+                ));
+            }
+            if *self.adapters_shown.borrow() != adapters {
+                let refs: Vec<&str> = adapters.iter().map(|(_, l)| l.as_str()).collect();
+                self.adapter.set_model(Some(&gtk::StringList::new(&refs)));
+                *self.adapters_shown.borrow_mut() = adapters.clone();
+            }
+            let ai = adapters
                 .iter()
-                .position(|(i, _)| Some(i.as_str()) == s.cfg.ap_iface.as_deref())
+                .position(|(i, _)| i.as_deref() == s.cfg.ap_iface.as_deref())
                 .unwrap_or(0);
             set_combo(&self.adapter, ai as u32);
-            self.adapter.set_subtitle(match s.adapters.get(ai) {
-                Some((_, true)) => tr("Supports 2.4 and 5 GHz"),
-                Some((_, false)) => tr("Supports 2.4 GHz"),
-                None => tr("No adapter can create hotspots"),
-            });
-            self.adapter.set_sensitive(editable);
+            let detail = match s.current_adapter() {
+                Some(a) => {
+                    let mut parts = Vec::new();
+                    if s.cfg.ap_iface.is_none() && s.adapters.len() > 1 {
+                        parts.push(trf("Uses {adapter}", &[("adapter", &a.label())]));
+                    }
+                    parts.push(a.bands().to_owned());
+                    if let Some(p) = &a.product {
+                        parts.push(p.clone());
+                    }
+                    if s.run == crate::state::RunState::On
+                        && s.running_iface.as_deref() == Some(a.iface.as_str())
+                    {
+                        parts.push(tr("in use").to_owned());
+                    }
+                    parts.join(" · ")
+                }
+                None => tr("No adapter can create hotspots").to_owned(),
+            };
+            self.adapter.set_subtitle(&detail);
+            self.adapter.set_sensitive(editable && !adapters.is_empty());
+            let problems: Vec<String> = s.adapter_problems.iter().map(|p| p.explain()).collect();
+            self.adapter_note.set_visible(!problems.is_empty());
+            self.adapter_note.set_label(&problems.join("\n\n"));
+            toggle(&self.adapter_note, "warning", s.adapters.is_empty());
+            toggle(&self.adapter_note, "dim-label", !s.adapters.is_empty());
 
             let bridge = s.cfg.mode == Mode::Bridge;
             let mut entries: Vec<(Option<String>, String)> = Vec::new();

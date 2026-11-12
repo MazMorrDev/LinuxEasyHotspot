@@ -10,6 +10,7 @@ use std::pin::Pin;
 
 use futures_util::{Stream, StreamExt, stream};
 use leh_model::state::{self, ac_state};
+use leh_model::usb::UsbWifiIssue;
 use leh_model::{
     AP_PROFILE_ID, BRIDGE_PORT_PROFILE_ID, BRIDGE_PROFILE_ID, ErrorKind, Event, HotspotConfig,
     HotspotState, Mode, NmCapabilities, NmVersion, ProfileIds, is_ap_profile_id,
@@ -56,11 +57,24 @@ pub struct Snapshot {
     pub caps: Option<NmCapabilities>,
     pub devices: Vec<DeviceInfo>,
     pub running: Option<RunningInfo>,
+    /// USB Wi-Fi adapters plugged in but not usable yet (no driver, or
+    /// still in "storage mode").
+    pub usb_issues: Vec<UsbWifiIssue>,
 }
 
 impl Snapshot {
     pub fn ap_devices(&self) -> impl Iterator<Item = &DeviceInfo> {
         self.devices.iter().filter(|d| d.is_ap_capable())
+    }
+
+    /// Every Wi-Fi adapter, including ones that can't run a hotspot.
+    pub fn wifi_devices(&self) -> impl Iterator<Item = &DeviceInfo> {
+        self.devices.iter().filter(|d| d.is_wifi())
+    }
+
+    /// The adapter a start with `wanted` would use.
+    pub fn pick_ap(&self, wanted: Option<&str>) -> Option<&DeviceInfo> {
+        devices::pick_ap(&self.devices, wanted)
     }
 
     pub fn ethernet_devices(&self) -> impl Iterator<Item = &DeviceInfo> {
@@ -141,7 +155,16 @@ struct Actor {
     active: Option<OwnedObjectPath>,
     events: Option<EventStream>,
     nm_owner: Option<EventStream>,
+    /// NM's DeviceAdded/DeviceRemoved (adapters plugged in or out).
+    hotplug: Option<Pin<Box<dyn Stream<Item = ()> + Send>>>,
     bridge: Option<BridgeSession>,
+}
+
+async fn next_hotplug(s: &mut Option<Pin<Box<dyn Stream<Item = ()> + Send>>>) -> Option<()> {
+    match s {
+        Some(s) => s.next().await,
+        None => std::future::pending().await,
+    }
 }
 
 async fn next_or_pending(s: &mut Option<EventStream>) -> Option<Event> {
@@ -168,6 +191,7 @@ impl Actor {
             active: None,
             events: None,
             nm_owner: None,
+            hotplug: None,
             bridge: None,
         }
     }
@@ -183,6 +207,12 @@ impl Actor {
                     None => break,
                 },
                 Some(ev) = next_or_pending(&mut self.events) => self.apply(ev).await,
+                Some(()) = next_hotplug(&mut self.hotplug) => {
+                    // Let the new device settle (driver, NM state) first.
+                    tokio::time::sleep(std::time::Duration::from_millis(800)).await;
+                    tracing::info!("network devices changed");
+                    self.refresh().await;
+                }
                 Some(ev) = next_or_pending(&mut self.nm_owner) => {
                     let appeared = ev == Event::NmAppeared;
                     self.apply(ev).await;
@@ -237,6 +267,9 @@ impl Actor {
         if self.nm_owner.is_none() {
             self.nm_owner = watch_nm_owner(&conn).await;
         }
+        if self.hotplug.is_none() {
+            self.hotplug = watch_hotplug(&conn).await;
+        }
         self.conn = Some(conn);
         self.refresh().await;
     }
@@ -275,6 +308,9 @@ impl Actor {
             Ok(d) => self.snap.devices = d,
             Err(e) => tracing::warn!(error = %e, "listing devices failed"),
         }
+        self.snap.usb_issues = tokio::task::spawn_blocking(crate::usb::wifi_issues)
+            .await
+            .unwrap_or_default();
 
         if self.active.is_none() {
             self.adopt_running(&conn, &nm).await;
@@ -687,6 +723,13 @@ async fn previous_profile(conn: &Connection, dev: &DeviceInfo) -> Option<OwnedOb
         return None;
     }
     ac.connection().await.ok()
+}
+
+async fn watch_hotplug(conn: &Connection) -> Option<Pin<Box<dyn Stream<Item = ()> + Send>>> {
+    let nm = NetworkManagerProxy::new(conn).await.ok()?;
+    let added = nm.receive_device_added().await.ok()?.map(|_| ());
+    let removed = nm.receive_device_removed().await.ok()?.map(|_| ());
+    Some(Box::pin(stream::select(added, removed)))
 }
 
 async fn watch_nm_owner(conn: &Connection) -> Option<EventStream> {

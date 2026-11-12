@@ -16,8 +16,8 @@ use tokio::task::JoinHandle;
 
 use crate::app::Msg;
 use crate::state::{
-    ClientVm, DeviceIcon, HelperStatus, Problem, RunState, Traffic, UiState, UplinkKind, UplinkVm,
-    now_secs,
+    AdapterProblem, AdapterVm, ClientVm, DeviceIcon, HelperStatus, Problem, RunState, Traffic,
+    UiState, UplinkKind, UplinkVm, now_secs,
 };
 
 pub fn runtime() -> &'static Runtime {
@@ -89,15 +89,20 @@ impl Live {
         }
         st.adapters = snap
             .ap_devices()
-            .map(|d| (d.iface.clone(), d.supports_5ghz()))
+            .map(|d| AdapterVm {
+                product: d.product.clone(),
+                ..AdapterVm::new(&d.iface, d.supports_5ghz(), d.is_usb())
+            })
             .collect();
+        st.auto_adapter = snap.pick_ap(None).map(|d| d.iface.clone());
+        st.adapter_problems = adapter_problems(&snap);
         st.ethernet = snap.ethernet_devices().map(|d| d.iface.clone()).collect();
         let ap_iface = snap
             .running
             .as_ref()
             .map(|r| r.ap_iface.clone())
             .or_else(|| st.cfg.ap_iface.clone())
-            .or_else(|| st.adapters.first().map(|(i, _)| i.clone()));
+            .or_else(|| st.auto_adapter.clone());
         let mut uplinks: Vec<UplinkVm> = snap
             .uplinks(ap_iface.as_deref())
             .map(|d| UplinkVm {
@@ -265,6 +270,43 @@ async fn iface_bytes(iface: &str) -> Option<(u64, u64)> {
     Some((read("rx_bytes").await?, read("tx_bytes").await?))
 }
 
+/// Wi-Fi adapters and USB sticks that can't run the hotspot, and why.
+fn adapter_problems(snap: &Snapshot) -> Vec<AdapterProblem> {
+    let mut out = Vec::new();
+    for d in snap.wifi_devices() {
+        let supports_ap = matches!(
+            d.kind,
+            DeviceKind::Wifi {
+                supports_ap: true,
+                ..
+            }
+        );
+        if !d.managed {
+            out.push(AdapterProblem::Unmanaged {
+                iface: d.iface.clone(),
+            });
+        } else if !supports_ap {
+            out.push(AdapterProblem::NoApMode {
+                iface: d.iface.clone(),
+                usb: d.is_usb(),
+                driver: d.driver.clone(),
+            });
+        } else if !d.is_usable() {
+            out.push(AdapterProblem::Unavailable {
+                iface: d.iface.clone(),
+            });
+        }
+    }
+    for i in &snap.usb_issues {
+        let (name, id) = (i.name.clone(), i.id.clone());
+        out.push(match i.problem {
+            leh_model::usb::UsbWifiProblem::StorageMode => {
+                AdapterProblem::UsbStorageMode { name, id }
+            }
+            leh_model::usb::UsbWifiProblem::NoDriver => AdapterProblem::UsbNoDriver { name, id },
+        });
+    }
+    out
 }
 
 fn guess_icon(c: &Client) -> DeviceIcon {
@@ -309,6 +351,8 @@ pub fn initial_state(cfg: HotspotConfig) -> UiState {
     st.cfg = cfg;
     st.live = true;
     st.adapters.clear();
+    st.auto_adapter = None;
+    st.adapter_problems.clear();
     st.traffic = Traffic::default();
     st.ethernet.clear();
     st.uplinks.clear();

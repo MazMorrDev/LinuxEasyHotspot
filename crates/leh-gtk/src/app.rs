@@ -231,6 +231,19 @@ impl App {
             Scenario::HelperUnauthorized => st.helper = HelperStatus::Unauthorized,
             Scenario::HelperTooOld => st.helper = HelperStatus::TooOld,
             Scenario::NoDevices => st.clients.clear(),
+            Scenario::UsbAdapter => {
+                use crate::state::{AdapterProblem, AdapterVm};
+                let mut usb = AdapterVm::new("wlx00c0ca9a1b2c", true, true);
+                usb.product = Some("802.11ac NIC".into());
+                st.adapters = vec![AdapterVm::new("wlp2s0", true, false), usb];
+                st.auto_adapter = Some("wlx00c0ca9a1b2c".into());
+                st.cfg.ap_iface = None;
+                st.adapter_problems = vec![AdapterProblem::UsbStorageMode {
+                    name: "Realtek DISK".into(),
+                    id: "0bda:1a2b".into(),
+                }];
+                self.toast(tr("New Wi-Fi adapter found"));
+            }
             Scenario::NewDevice => {
                 let c = demo::new_device();
                 if st.client(&c.mac).is_none() {
@@ -768,8 +781,54 @@ impl App {
                 demo::tick(st);
             }
             Msg::Snapshot(snap) => {
+                let first = st.nm_version == "?";
+                let usb_before: Vec<String> = st
+                    .adapters
+                    .iter()
+                    .filter(|a| a.usb)
+                    .map(|a| a.iface.clone())
+                    .collect();
+                let problems_before = st.adapter_problems.clone();
                 if let Some(live) = &mut self.live {
                     live.apply(st, *snap);
+                }
+                // Hot-plugged adapters: say what happened.
+                if !first {
+                    let new_usb: Vec<String> = st
+                        .adapters
+                        .iter()
+                        .filter(|a| a.usb && !usb_before.contains(&a.iface))
+                        .map(|a| a.iface.clone())
+                        .collect();
+                    let new_problem = st
+                        .adapter_problems
+                        .iter()
+                        .any(|p| !problems_before.contains(p));
+                    if let Some(iface) = new_usb.first() {
+                        let msg = if st.run == RunState::On {
+                            trf(
+                                "USB Wi-Fi adapter found ({iface}). It will be used the next time the hotspot starts",
+                                &[("iface", iface)],
+                            )
+                        } else {
+                            trf("USB Wi-Fi adapter found ({iface})", &[("iface", iface)])
+                        };
+                        // Only "Automatic" switches to it by itself.
+                        let msg = if st.cfg.ap_iface.is_some() {
+                            trf(
+                                "USB Wi-Fi adapter found ({iface}). Choose it in Settings → Hotspot adapter",
+                                &[("iface", iface)],
+                            )
+                        } else {
+                            msg
+                        };
+                        toast(&self.toasts, &msg);
+                    } else if new_problem {
+                        toast(
+                            &self.toasts,
+                            tr("A Wi-Fi adapter can't be used — see Settings"),
+                        );
+                    }
                 }
                 if self.start_pending && st.problem.is_none() && !st.adapters.is_empty() {
                     self.start_pending = false;
@@ -1190,7 +1249,15 @@ impl SimpleComponent for App {
                 let (icon, title, desc, action) = status_page_for(p);
                 w.problem.set_icon_name(Some(icon));
                 w.problem.set_title(title);
-                w.problem.set_description(Some(desc));
+                // Say what's wrong with the adapters that are there.
+                let mut desc = desc.to_owned();
+                if p == Problem::NoAdapter {
+                    for prob in &s.adapter_problems {
+                        desc.push_str("\n\n");
+                        desc.push_str(&prob.explain());
+                    }
+                }
+                w.problem.set_description(Some(&desc));
                 if let Some(b) = w.problem.child().and_downcast::<gtk::Button>() {
                     b.set_label(action);
                 }

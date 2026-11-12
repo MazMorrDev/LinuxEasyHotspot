@@ -39,6 +39,13 @@ pub trait NetworkManager {
 
     #[zbus(property)]
     fn wireless_enabled(&self) -> zbus::Result<bool>;
+
+    /// A device appeared (e.g. a USB Wi-Fi adapter was plugged in).
+    #[zbus(signal)]
+    fn device_added(&self, device_path: OwnedObjectPath) -> zbus::Result<()>;
+
+    #[zbus(signal)]
+    fn device_removed(&self, device_path: OwnedObjectPath) -> zbus::Result<()>;
 }
 
 #[proxy(

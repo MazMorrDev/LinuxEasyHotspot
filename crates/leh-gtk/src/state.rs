@@ -54,6 +54,111 @@ impl DeviceIcon {
     }
 }
 
+/// A Wi-Fi adapter that can run the hotspot.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct AdapterVm {
+    pub iface: String,
+    pub five_ghz: bool,
+    /// Plugged in over USB (usually an external adapter with a bigger antenna).
+    pub usb: bool,
+    /// USB product name, e.g. "802.11ac NIC".
+    pub product: Option<String>,
+}
+
+impl AdapterVm {
+    pub fn new(iface: &str, five_ghz: bool, usb: bool) -> Self {
+        Self {
+            iface: iface.into(),
+            five_ghz,
+            usb,
+            product: None,
+        }
+    }
+
+    /// "USB adapter (wlx00c0ca)" or "Built-in Wi-Fi (wlp3s0)".
+    pub fn label(&self) -> String {
+        if self.usb {
+            trf("USB adapter ({iface})", &[("iface", &self.iface)])
+        } else {
+            trf("Built-in Wi-Fi ({iface})", &[("iface", &self.iface)])
+        }
+    }
+
+    pub fn bands(&self) -> &'static str {
+        if self.five_ghz {
+            tr("2.4 and 5 GHz")
+        } else {
+            tr("2.4 GHz only")
+        }
+    }
+}
+
+/// Why a Wi-Fi adapter the computer has can't run the hotspot.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum AdapterProblem {
+    /// The driver doesn't support access-point mode.
+    NoApMode {
+        iface: String,
+        usb: bool,
+        driver: Option<String>,
+    },
+    /// NetworkManager doesn't manage it.
+    Unmanaged { iface: String },
+    /// Turned off (airplane mode, switch) or missing firmware.
+    Unavailable { iface: String },
+    /// A USB adapter still showing up as a USB disk.
+    UsbStorageMode { name: String, id: String },
+    /// A USB adapter with no driver loaded.
+    UsbNoDriver { name: String, id: String },
+}
+
+impl AdapterProblem {
+    pub fn explain(&self) -> String {
+        let named = |name: &str, id: &str| {
+            if name.is_empty() {
+                id.to_owned()
+            } else {
+                format!("{name} ({id})")
+            }
+        };
+        match self {
+            Self::NoApMode { iface, usb, driver } => {
+                let what = if *usb {
+                    trf("The USB adapter {iface}", &[("iface", iface)])
+                } else {
+                    trf("The built-in adapter {iface}", &[("iface", iface)])
+                };
+                match driver {
+                    Some(d) => trf(
+                        "{adapter} can't create hotspots: its driver ({driver}) doesn't support access-point mode.",
+                        &[("adapter", &what), ("driver", d)],
+                    ),
+                    None => trf(
+                        "{adapter} can't create hotspots: its driver doesn't support access-point mode.",
+                        &[("adapter", &what)],
+                    ),
+                }
+            }
+            Self::Unmanaged { iface } => trf(
+                "{iface} isn't managed by NetworkManager, so it can't be used. Check /etc/NetworkManager/conf.d for an unmanaged-devices rule.",
+                &[("iface", iface)],
+            ),
+            Self::Unavailable { iface } => trf(
+                "{iface} is unavailable: it may be switched off (airplane mode) or missing firmware.",
+                &[("iface", iface)],
+            ),
+            Self::UsbStorageMode { name, id } => trf(
+                "The USB Wi-Fi adapter {device} is in storage mode (it shows up as a disk with its Windows driver). Install usb-modeswitch (sudo apt install usb-modeswitch), then unplug it and plug it in again.",
+                &[("device", &named(name, id))],
+            ),
+            Self::UsbNoDriver { name, id } => trf(
+                "The USB Wi-Fi adapter {device} has no driver installed. Search the web for a Linux driver for “{id}”.",
+                &[("device", &named(name, id)), ("id", id)],
+            ),
+        }
+    }
+}
+
 /// Traffic of the whole hotspot while it runs (all devices together).
 #[derive(Debug, Clone, Copy, PartialEq, Default)]
 pub struct Traffic {
@@ -151,8 +256,12 @@ pub struct UiState {
     /// Short-lived failure shown in a banner on Home: (title, details).
     pub error: Option<(String, String)>,
     pub cfg: HotspotConfig,
-    /// (iface, supports 5 GHz)
-    pub adapters: Vec<(String, bool)>,
+    /// Wi-Fi adapters that can run the hotspot.
+    pub adapters: Vec<AdapterVm>,
+    /// The adapter "Automatic" stands for right now.
+    pub auto_adapter: Option<String>,
+    /// Wi-Fi adapters (or USB sticks) that can't be used, and why.
+    pub adapter_problems: Vec<AdapterProblem>,
     /// Ethernet devices available as upstream / bridge port.
     pub ethernet: Vec<String>,
     /// Every connection that could provide internet (not the AP adapter).
@@ -229,17 +338,26 @@ impl UiState {
         v
     }
 
+    /// The adapter the hotspot runs on, or would run on if started now.
+    pub fn current_adapter(&self) -> Option<&AdapterVm> {
+        let wanted = self
+            .running_iface
+            .as_deref()
+            .filter(|_| self.run != RunState::Off)
+            .or(self.cfg.ap_iface.as_deref())
+            .or(self.auto_adapter.as_deref());
+        self.adapters
+            .iter()
+            .find(|a| Some(a.iface.as_str()) == wanted)
+            .or(self.adapters.first())
+    }
+
     pub fn client(&self, mac: &str) -> Option<&ClientVm> {
         self.clients.iter().find(|c| c.mac == mac)
     }
 
     pub fn ap_supports_5ghz(&self) -> bool {
-        let wanted = self.cfg.ap_iface.as_deref();
-        self.adapters
-            .iter()
-            .find(|(i, _)| Some(i.as_str()) == wanted)
-            .or(self.adapters.first())
-            .is_some_and(|(_, five)| *five)
+        self.current_adapter().is_some_and(|a| a.five_ghz)
     }
 
     pub fn helper_ready(&self) -> bool {
@@ -305,6 +423,9 @@ impl UiState {
         };
         parts.push(band.into());
         parts.push(trf("ch {n}", &[("n", &ch.to_string())]));
+        if let Some(a) = self.current_adapter().filter(|a| a.usb) {
+            parts.push(trf("USB adapter ({iface})", &[("iface", &a.iface)]));
+        }
         if let Some(t) = self.total_down_kbps {
             parts.push(format!("≤{}", leh_model::units::format_rate(t)));
         }
@@ -424,10 +545,11 @@ pub mod demo {
         HelperTooOld,
         NoDevices,
         NewDevice,
+        UsbAdapter,
     }
 
     impl Scenario {
-        pub const ALL: [(Scenario, &'static str, &'static str); 12] = [
+        pub const ALL: [(Scenario, &'static str, &'static str); 13] = [
             (Scenario::Normal, "normal", n_("Normal")),
             (Scenario::StartFails, "start-fails", n_("Next start fails")),
             (
@@ -464,6 +586,11 @@ pub mod demo {
             (Scenario::HelperTooOld, "helper-old", n_("Helper: too old")),
             (Scenario::NoDevices, "no-devices", n_("No devices")),
             (Scenario::NewDevice, "new-device", n_("A new device joins")),
+            (
+                Scenario::UsbAdapter,
+                "usb-adapter",
+                n_("USB Wi-Fi adapters plugged in"),
+            ),
         ];
 
         pub fn from_id(id: &str) -> Option<Self> {
@@ -626,7 +753,9 @@ pub mod demo {
             problem: None,
             error: None,
             cfg,
-            adapters: vec![("wlp2s0".into(), true)],
+            adapters: vec![AdapterVm::new("wlp2s0", true, false)],
+            auto_adapter: Some("wlp2s0".into()),
+            adapter_problems: Vec::new(),
             ethernet: vec!["enp0s31f6".into()],
             uplinks: vec![
                 UplinkVm {

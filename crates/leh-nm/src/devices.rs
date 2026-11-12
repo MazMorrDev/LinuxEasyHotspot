@@ -32,12 +32,33 @@ pub enum DeviceKind {
     Modem,
 }
 
+/// How the adapter is attached to the computer.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub enum Bus {
+    Usb,
+    Pci,
+    /// SDIO, platform devices and anything else.
+    #[default]
+    Other,
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct DeviceInfo {
     pub path: OwnedObjectPath,
     pub iface: String,
     pub kind: DeviceKind,
     pub state: u32,
+    /// NetworkManager controls the device. Unmanaged Wi-Fi adapters are
+    /// listed (so the app can explain why it can't use them); unmanaged
+    /// wired and mobile devices are skipped.
+    pub managed: bool,
+    /// Current MAC address (`aa:bb:cc:dd:ee:ff`), empty if unknown.
+    pub hw_address: String,
+    pub bus: Bus,
+    /// Kernel driver, e.g. `rtw88_8821cu`.
+    pub driver: Option<String>,
+    /// Product name of a USB adapter, e.g. "802.11ac NIC".
+    pub product: Option<String>,
     /// `/` when nothing is active.
     pub active_connection: OwnedObjectPath,
     /// Name (`connection.id`) of the active profile, e.g. "Wired connection 1".
@@ -47,14 +68,23 @@ pub struct DeviceInfo {
 }
 
 impl DeviceInfo {
+    pub fn is_wifi(&self) -> bool {
+        matches!(self.kind, DeviceKind::Wifi { .. })
+    }
+
     pub fn is_ap_capable(&self) -> bool {
-        matches!(
-            self.kind,
-            DeviceKind::Wifi {
-                supports_ap: true,
-                ..
-            }
-        )
+        self.managed
+            && matches!(
+                self.kind,
+                DeviceKind::Wifi {
+                    supports_ap: true,
+                    ..
+                }
+            )
+    }
+
+    pub fn is_usb(&self) -> bool {
+        self.bus == Bus::Usb
     }
 
     pub fn supports_5ghz(&self) -> bool {
@@ -73,10 +103,11 @@ impl DeviceInfo {
 
     /// Can provide internet to share (anything but the device running the AP).
     pub fn can_be_uplink(&self) -> bool {
-        matches!(
-            self.kind,
-            DeviceKind::Ethernet | DeviceKind::Modem | DeviceKind::Wifi { .. }
-        )
+        self.managed
+            && matches!(
+                self.kind,
+                DeviceKind::Ethernet | DeviceKind::Modem | DeviceKind::Wifi { .. }
+            )
     }
 
     pub fn is_usable(&self) -> bool {
@@ -88,7 +119,34 @@ impl DeviceInfo {
     }
 }
 
-/// Lists managed Wi-Fi and Ethernet devices, Wi-Fi first.
+/// Where the kernel says `iface` is attached, its driver and (USB) product name.
+fn sysfs_info(iface: &str) -> (Bus, Option<String>, Option<String>) {
+    let dev = std::path::Path::new("/sys/class/net")
+        .join(iface)
+        .join("device");
+    let name_of = |p: std::path::PathBuf| {
+        std::fs::read_link(p)
+            .ok()
+            .and_then(|l| l.file_name().map(|n| n.to_string_lossy().into_owned()))
+    };
+    let bus = match name_of(dev.join("subsystem")).as_deref() {
+        Some("usb") => Bus::Usb,
+        Some("pci") => Bus::Pci,
+        _ => Bus::Other,
+    };
+    let driver = name_of(dev.join("driver"));
+    // `device` is the USB interface; the product string is on its parent.
+    let product = (bus == Bus::Usb)
+        .then(|| std::fs::canonicalize(&dev).ok())
+        .flatten()
+        .and_then(|p| std::fs::read_to_string(p.parent()?.join("product")).ok())
+        .map(|s| s.trim().to_owned())
+        .filter(|s| !s.is_empty());
+    (bus, driver, product)
+}
+
+/// Lists Wi-Fi, Ethernet and mobile devices, Wi-Fi first. Unmanaged
+/// Ethernet and mobile devices are skipped, unmanaged Wi-Fi is kept.
 pub async fn list(conn: &Connection) -> zbus::Result<Vec<DeviceInfo>> {
     let nm = NetworkManagerProxy::new(conn).await?;
     let mut out = Vec::new();
@@ -114,19 +172,31 @@ pub async fn list(conn: &Connection) -> zbus::Result<Vec<DeviceInfo>> {
             NM_DEVICE_TYPE_MODEM => DeviceKind::Modem,
             _ => continue,
         };
-        if !dev.managed().await.unwrap_or(false) {
+        let managed = dev.managed().await.unwrap_or(false);
+        if !managed && !matches!(kind, DeviceKind::Wifi { .. }) {
             continue;
         }
         let active_connection = dev.active_connection().await?;
         let (connection_name, is_default) = active_info(conn, &active_connection).await;
+        let iface = dev.interface().await?;
+        let (bus, driver, product) = sysfs_info(&iface);
         out.push(DeviceInfo {
             path,
-            iface: dev.interface().await?,
             kind,
             state: dev.state().await?,
+            managed,
+            hw_address: dev
+                .hw_address()
+                .await
+                .unwrap_or_default()
+                .to_ascii_lowercase(),
+            bus,
+            driver,
+            product,
             active_connection,
             connection_name,
             is_default,
+            iface,
         });
     }
     out.sort_by_key(|d| (d.is_ethernet(), d.iface.clone()));
@@ -146,8 +216,10 @@ async fn active_info(conn: &Connection, ac: &OwnedObjectPath) -> (Option<String>
     (p.id().await.ok(), p.is_default().await.unwrap_or(false))
 }
 
-/// The device the hotspot should run on: the configured one, else the first
-/// usable AP-capable Wi-Fi device.
+/// The device the hotspot should run on: the configured one, else the best
+/// AP-capable Wi-Fi device: usable, not busy as this computer's own Wi-Fi
+/// connection, and preferably a USB adapter (usually the one with the bigger
+/// antenna, plugged in precisely to run the hotspot).
 pub fn pick_ap<'a>(devices: &'a [DeviceInfo], wanted: Option<&str>) -> Option<&'a DeviceInfo> {
     match wanted {
         Some(name) => devices
@@ -156,7 +228,7 @@ pub fn pick_ap<'a>(devices: &'a [DeviceInfo], wanted: Option<&str>) -> Option<&'
         None => devices
             .iter()
             .filter(|d| d.is_ap_capable())
-            .min_by_key(|d| (!d.is_usable(), d.is_connected())),
+            .min_by_key(|d| (!d.is_usable(), d.is_connected(), !d.is_usb())),
     }
 }
 
@@ -170,6 +242,11 @@ mod tests {
             iface: iface.into(),
             kind,
             state,
+            managed: true,
+            hw_address: String::new(),
+            bus: Bus::Pci,
+            driver: None,
+            product: None,
             active_connection: OwnedObjectPath::try_from("/").unwrap(),
             connection_name: None,
             is_default: false,
@@ -192,5 +269,32 @@ mod tests {
         assert_eq!(pick_ap(&devs, Some("wlan0")).unwrap().iface, "wlan0");
         assert!(pick_ap(&devs, Some("wlan2")).is_none());
         assert!(pick_ap(&devs, Some("eth0")).is_none());
+    }
+
+    #[test]
+    fn prefers_free_usb_adapter() {
+        let wifi = DeviceKind::Wifi {
+            supports_ap: true,
+            supports_5ghz: true,
+        };
+        let mut usb = dev("wlx00c0ca", wifi.clone(), dev_state::DISCONNECTED);
+        usb.bus = Bus::Usb;
+        let internal = dev("wlp3s0", wifi.clone(), dev_state::DISCONNECTED);
+        let devs = vec![internal.clone(), usb.clone()];
+        assert_eq!(pick_ap(&devs, None).unwrap().iface, "wlx00c0ca");
+        // The internal card still wins if the USB one is unavailable...
+        let mut gone = usb.clone();
+        gone.state = dev_state::UNAVAILABLE;
+        assert_eq!(
+            pick_ap(&[internal.clone(), gone], None).unwrap().iface,
+            "wlp3s0"
+        );
+        // ...and unmanaged adapters are never picked.
+        let mut unmanaged = usb;
+        unmanaged.managed = false;
+        assert_eq!(
+            pick_ap(&[internal, unmanaged], None).unwrap().iface,
+            "wlp3s0"
+        );
     }
 }
