@@ -565,10 +565,22 @@ impl Actor {
                 return Err(Event::Failed(ErrorKind::BridgeNeedsEthernet));
             };
             let restore = previous_profile(conn, &eth).await;
-            let bridge_path =
-                profiles::upsert(conn, &settings::bridge_profile(&ids), bridge.as_ref())
-                    .await
-                    .map_err(call_error)?;
+            // Keep this computer's place on the LAN: the bridge takes over the
+            // Ethernet card's MAC (same DHCP lease, same IP) and the wired
+            // profile's IP settings (static address, DNS…).
+            let mut dict = profiles::to_dict(&settings::bridge_profile(
+                &ids,
+                Some(eth.hw_address.as_str()),
+            ));
+            if let Some(path) = &restore
+                && let Some(ip) = profiles::ip_settings(conn, path).await
+            {
+                tracing::info!("bridge reuses the wired connection's IP settings");
+                dict.extend(ip);
+            }
+            let bridge_path = profiles::upsert_dict(conn, dict, bridge.as_ref())
+                .await
+                .map_err(call_error)?;
             let port_path = profiles::upsert(
                 conn,
                 &settings::bridge_port_profile(&eth.iface, &ids),

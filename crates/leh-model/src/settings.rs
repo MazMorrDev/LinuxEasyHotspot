@@ -143,8 +143,33 @@ pub fn ap_profile(cfg: &HotspotConfig, caps: &NmCapabilities, ids: &ProfileIds) 
     s
 }
 
+/// `aa:bb:cc:dd:ee:ff` → bytes.
+pub fn mac_bytes(mac: &str) -> Option<Vec<u8>> {
+    let bytes: Vec<u8> = mac
+        .split(':')
+        .map(|o| {
+            (o.len() == 2)
+                .then(|| u8::from_str_radix(o, 16).ok())
+                .flatten()
+        })
+        .collect::<Option<_>>()?;
+    (bytes.len() == 6 && bytes.iter().any(|b| *b != 0)).then_some(bytes)
+}
+
 /// Bridge master profile (Bridge mode). Gets its address from the LAN.
-pub fn bridge_profile(ids: &ProfileIds) -> NmSettings {
+///
+/// `eth_mac` is the current MAC of the Ethernet card being bridged. The bridge
+/// takes it over, so the router keeps seeing the same device and hands out
+/// the same address as before: this computer stays reachable at its usual IP
+/// on the local network (file sharing, Warpinator, SSH…).
+///
+/// STP stays off: with a single uplink there are no loops to break, and STP
+/// would block all traffic for several seconds after every start (and send
+/// BPDUs that some routers and managed switches react badly to).
+///
+/// The IP settings default to DHCP; `leh-nm` copies the Ethernet profile's
+/// own `ipv4`/`ipv6` settings over these when it has them (static IPs, DNS…).
+pub fn bridge_profile(ids: &ProfileIds, eth_mac: Option<&str>) -> NmSettings {
     let mut s = NmSettings::default();
     connection(&mut s, BRIDGE_PROFILE_ID, &ids.bridge_uuid, "bridge", ids);
     s.set(
@@ -152,10 +177,12 @@ pub fn bridge_profile(ids: &ProfileIds) -> NmSettings {
         "interface-name",
         SettingValue::str(BRIDGE_IFACE),
     )
-    .set("bridge", "stp", SettingValue::Bool(true))
-    .set("bridge", "forward-delay", SettingValue::U32(4))
+    .set("bridge", "stp", SettingValue::Bool(false))
     .set("ipv4", "method", SettingValue::str("auto"))
     .set("ipv6", "method", SettingValue::str("auto"));
+    if let Some(mac) = eth_mac.and_then(mac_bytes) {
+        s.set("bridge", "mac-address", SettingValue::Bytes(mac));
+    }
     s
 }
 
@@ -237,10 +264,42 @@ mod tests {
             "bridge_set",
             (
                 ap_profile(&cfg(Mode::Bridge), &caps(46), &ids),
-                bridge_profile(&ids),
+                bridge_profile(&ids, Some("3C:52:82:0A:1B:2C")),
                 bridge_port_profile("enp0s31f6", &ids),
             )
         );
+    }
+
+    #[test]
+    fn bridge_keeps_ethernet_mac_and_skips_stp() {
+        let s = bridge_profile(&ids(), Some("3c:52:82:0a:1b:2c"));
+        assert_eq!(
+            s.get("bridge", "mac-address"),
+            Some(&SettingValue::Bytes(vec![
+                0x3c, 0x52, 0x82, 0x0a, 0x1b, 0x2c
+            ]))
+        );
+        assert_eq!(s.get("bridge", "stp"), Some(&SettingValue::Bool(false)));
+        // Unknown or bogus MACs leave the choice to NM.
+        for bad in [
+            None,
+            Some(""),
+            Some("00:00:00:00:00:00"),
+            Some("zz:00:00:00:00:01"),
+        ] {
+            assert_eq!(
+                bridge_profile(&ids(), bad).get("bridge", "mac-address"),
+                None
+            );
+        }
+    }
+
+    #[test]
+    fn mac_parsing() {
+        assert_eq!(mac_bytes("aa:bb:cc:dd:ee:ff").map(|b| b.len()), Some(6));
+        assert_eq!(mac_bytes("aa:bb:cc:dd:ee"), None);
+        assert_eq!(mac_bytes("aa:bb:cc:dd:ee:ff:00"), None);
+        assert_eq!(mac_bytes("a:bb:cc:dd:ee:ff"), None);
     }
 
     #[test]

@@ -1,6 +1,6 @@
 ---
 source: crates/leh-model/src/settings.rs
-expression: "(ap_profile(&cfg(Mode::Bridge), &caps(46), &ids), bridge_profile(&ids),\nbridge_port_profile(\"enp0s31f6\", &ids),)"
+expression: "(ap_profile(&cfg(Mode::Bridge), &caps(46), &ids),\nbridge_profile(&ids, Some(\"3C:52:82:0A:1B:2C\")),\nbridge_port_profile(\"enp0s31f6\", &ids),)"
 ---
 [
   {
@@ -94,13 +94,20 @@ expression: "(ap_profile(&cfg(Mode::Bridge), &caps(46), &ids), bridge_profile(&i
   },
   {
     "bridge": {
-      "forward-delay": {
-        "type": "u32",
-        "value": 4
+      "mac-address": {
+        "type": "bytes",
+        "value": [
+          60,
+          82,
+          130,
+          10,
+          27,
+          44
+        ]
       },
       "stp": {
         "type": "bool",
-        "value": true
+        "value": false
       }
     },
     "connection": {

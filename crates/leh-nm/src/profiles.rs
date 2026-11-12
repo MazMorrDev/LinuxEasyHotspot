@@ -33,6 +33,53 @@ pub fn to_dict(s: &NmSettings) -> SettingsDict<'static> {
         .collect()
 }
 
+/// Keys that NM documents as overriding their modern replacements when both
+/// are sent (`addresses` beats `address-data`, …); dropped when copying.
+const LEGACY_IP_KEYS: &[&str] = &["addresses", "routes"];
+
+/// The `ipv4` and `ipv6` settings of a saved profile, ready to be sent as part
+/// of another profile. `None` if the profile can't be read or doesn't
+/// configure IP the usual way (DHCP/SLAAC or static addresses).
+pub async fn ip_settings(
+    conn: &Connection,
+    profile: &OwnedObjectPath,
+) -> Option<SettingsDict<'static>> {
+    let c = SettingsConnectionProxy::builder(conn)
+        .path(profile.clone())
+        .ok()?
+        .build()
+        .await
+        .ok()?;
+    let all = c.get_settings().await.ok()?;
+    let method = |section: &str| -> Option<String> {
+        all.get(section)?
+            .get("method")?
+            .downcast_ref::<&str>()
+            .ok()
+            .map(str::to_owned)
+    };
+    if !matches!(method("ipv4").as_deref(), Some("auto" | "manual")) {
+        return None;
+    }
+    let mut out = SettingsDict::new();
+    for section in ["ipv4", "ipv6"] {
+        let Some(props) = all.get(section) else {
+            continue;
+        };
+        let mut copy = HashMap::new();
+        for (k, v) in props {
+            if LEGACY_IP_KEYS.contains(&k.as_str()) {
+                continue;
+            }
+            if let Ok(v) = v.try_clone() {
+                copy.insert(k.clone(), Value::from(v));
+            }
+        }
+        out.insert(section.to_owned(), copy);
+    }
+    Some(out)
+}
+
 /// A saved profile: its D-Bus path and UUID.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Profile {
@@ -88,7 +135,16 @@ pub async fn upsert(
     existing: Option<&Profile>,
 ) -> zbus::Result<OwnedObjectPath> {
     tracing::debug!(settings = ?settings.redacted(), "writing NM profile");
-    let dict = to_dict(settings);
+    upsert_dict(conn, to_dict(settings), existing).await
+}
+
+/// Like [`upsert`], for a dictionary that was already built (or extended
+/// with settings copied from another profile).
+pub async fn upsert_dict(
+    conn: &Connection,
+    dict: SettingsDict<'static>,
+    existing: Option<&Profile>,
+) -> zbus::Result<OwnedObjectPath> {
     match existing {
         Some(p) => {
             let c = SettingsConnectionProxy::builder(conn)

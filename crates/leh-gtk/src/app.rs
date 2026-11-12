@@ -190,7 +190,7 @@ impl App {
         let d = adw::AlertDialog::new(
             Some(tr("Switch to Bridge mode?")),
             Some(tr(
-                "Devices will join your wired network and get addresses from your router. Your wired connection drops for a few seconds while the bridge is set up.",
+                "Devices will join your wired network and get addresses from your router. While the hotspot is on, this computer's wired connection moves into a bridge: it keeps the same address on your network, but drops for a few seconds when the hotspot starts and stops.\n\nTo share files with devices on the hotspot (for example with Warpinator), set those apps to use any network interface, or use Router mode, which never touches the wired connection.",
             )),
         );
         d.add_response("cancel", tr("Cancel"));
