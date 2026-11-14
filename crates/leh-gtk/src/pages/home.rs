@@ -49,12 +49,15 @@ pub struct HomePage {
     last_run: Cell<RunState>,
     stop: gtk::Button,
     /// Session activity under the QR code and buttons.
-    activity: gtk::Box,
     activity_list: gtk::ListBox,
     activity_shown: Cell<u64>,
     qr_payload: RefCell<String>,
     guard: Guard,
 }
+
+/// The session log never gets shorter than this (pixels); a taller window
+/// gives it the rest of the height.
+const ACTIVITY_MIN_HEIGHT: i32 = 180;
 
 fn pill(label: &str, class: &str) -> (gtk::Button, gtk::Label, gtk::Spinner) {
     let l = gtk::Label::new(Some(label));
@@ -285,14 +288,15 @@ impl HomePage {
         let on_grid = gtk::Grid::builder()
             .row_spacing(24)
             .column_spacing(32)
-            .valign(gtk::Align::Center)
             .build();
         head.set_hexpand(true);
         on_grid.attach(&head, 0, 0, 1, 1);
         on_grid.attach(&qr_box, 0, 1, 1, 1);
         on_grid.attach(&details, 0, 2, 1, 1);
 
-        // Session activity (newest first).
+        // Session activity (newest first). It takes the height left under the
+        // QR code and buttons and scrolls on its own, so a long session never
+        // makes the page longer; only a very short window scrolls the page.
         let activity_title = gtk::Label::builder()
             .label(tr("Session activity"))
             .halign(gtk::Align::Start)
@@ -300,15 +304,23 @@ impl HomePage {
             .build();
         let activity_list = gtk::ListBox::builder()
             .selection_mode(gtk::SelectionMode::None)
+            .valign(gtk::Align::Start)
             .css_classes(["boxed-list"])
+            .build();
+        let activity_scroll = gtk::ScrolledWindow::builder()
+            .hscrollbar_policy(gtk::PolicyType::Never)
+            .min_content_height(ACTIVITY_MIN_HEIGHT)
+            .vexpand(true)
+            .child(&activity_list)
             .build();
         let activity = gtk::Box::new(gtk::Orientation::Vertical, 8);
         activity.set_hexpand(true);
+        activity.set_vexpand(true);
         activity.append(&activity_title);
-        activity.append(&activity_list);
-        on_grid.attach(&activity, 0, 3, 1, 1);
-        let on = gtk::Box::new(gtk::Orientation::Vertical, 0);
+        activity.append(&activity_scroll);
+        let on = gtk::Box::new(gtk::Orientation::Vertical, 24);
         on.append(&on_grid);
+        on.append(&activity);
 
         let stack = gtk::Stack::builder()
             .transition_type(gtk::StackTransitionType::Crossfade)
@@ -355,7 +367,6 @@ impl HomePage {
             pw_text,
             last_run: Cell::new(RunState::Off),
             stop,
-            activity,
             activity_list,
             activity_shown: Cell::new(u64::MAX),
             qr_payload: RefCell::new(String::new()),
@@ -371,8 +382,6 @@ impl HomePage {
             .expect("grid has a layout manager");
         let qr = lm.layout_child(&self.on_qr);
         let details = lm.layout_child(&self.on_details);
-        let activity = lm.layout_child(&self.activity);
-        bp.add_setter(&activity, "column-span", Some(&2.to_value()));
         bp.add_setter(&qr, "column", Some(&1.to_value()));
         bp.add_setter(&qr, "row", Some(&0.to_value()));
         bp.add_setter(&qr, "row-span", Some(&3.to_value()));
