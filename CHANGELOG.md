@@ -4,6 +4,21 @@ All notable changes are documented here. The format follows [Keep a Changelog](h
 
 ## [Unreleased]
 
+### Added
+- **Windows 10/11 support** in a new interface built with [GPUI](https://gpui.rs) (`crates/easyhotspot`, binary `easyhotspot`), which runs on Linux too. On Windows it drives the built-in Mobile Hotspot (new `leh-win` crate, WinRT): start/stop, QR code, name and password, adapter and shared connection, band (Windows 11), connected devices, total traffic, tray icon and launch at login, with no administrator rights. Bridge, Local-only, channel, hidden network and per-device control aren't available there yet and are hidden or explained. Only compile-checked so far; CI builds the `.exe`.
+- The new interface keeps one instance per user: launching it again shows the running window.
+- Starting the hotspot on the adapter that is this computer's Wi-Fi connection no longer drops it when another Wi-Fi adapter is free: the connection moves there first (e.g. to a USB stick whose driver can't create hotspots, like `mt7601u`) and back when the hotspot stops. Shown in the session log.
+- Settings: adapters without access-point mode explain they can still keep this computer on Wi-Fi.
+- `scripts/diagnose-network.sh`: a guided before/during/after network report (addresses, routes, profiles, NetworkManager log) for bug reports.
+
+### Changed
+- The app is now called "Easy Hotspot" (window title, About, tray, NetworkManager profiles). Profiles named "Linux Easy Hotspot…" or "LinuxEasyHotspot…" are still recognized and renamed on the next start. The settings folder, desktop id and helper names are unchanged for now.
+- zbus and ksni use their default async executor instead of tokio's (the tokio feature also switched GPUI's own zbus to tokio and crashed it).
+- `scripts/update-po.py` also collects the strings of the new interface and the Windows backend; Spanish translation updated.
+
+### Fixed
+- Home: the session log grew the page with every entry. It now fills the space under the QR code and buttons and scrolls on its own.
+
 ## [0.2.0] - 2026-11-12
 
 A larger update: clearer device management, usage at a glance, a session log, USB Wi-Fi adapters, a Bridge mode that keeps this computer on the local network, and the end of the repeated authorization banner.
