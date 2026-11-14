@@ -62,7 +62,7 @@ expression: "(ap_profile(&cfg(Mode::Bridge), &caps(46), &ids),\nbridge_profile(&
       },
       "id": {
         "type": "str",
-        "value": "Linux Easy Hotspot"
+        "value": "Easy Hotspot"
       },
       "interface-name": {
         "type": "str",
@@ -117,7 +117,7 @@ expression: "(ap_profile(&cfg(Mode::Bridge), &caps(46), &ids),\nbridge_profile(&
       },
       "id": {
         "type": "str",
-        "value": "Linux Easy Hotspot Bridge"
+        "value": "Easy Hotspot Bridge"
       },
       "interface-name": {
         "type": "str",
@@ -159,7 +159,7 @@ expression: "(ap_profile(&cfg(Mode::Bridge), &caps(46), &ids),\nbridge_profile(&
       },
       "id": {
         "type": "str",
-        "value": "Linux Easy Hotspot Bridge Port"
+        "value": "Easy Hotspot Bridge Port"
       },
       "interface-name": {
         "type": "str",

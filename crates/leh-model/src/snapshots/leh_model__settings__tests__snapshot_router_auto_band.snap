@@ -61,7 +61,7 @@ expression: "ap_profile(&cfg(Mode::Router), &caps(46), &ids())"
     },
     "id": {
       "type": "str",
-      "value": "Linux Easy Hotspot"
+      "value": "Easy Hotspot"
     },
     "interface-name": {
       "type": "str",

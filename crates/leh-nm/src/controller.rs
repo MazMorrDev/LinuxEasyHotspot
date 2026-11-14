@@ -12,9 +12,8 @@ use futures_util::{Stream, StreamExt, stream};
 use leh_model::state::{self, ac_state};
 use leh_model::usb::UsbWifiIssue;
 use leh_model::{
-    AP_PROFILE_ID, BRIDGE_PORT_PROFILE_ID, BRIDGE_PROFILE_ID, ErrorKind, Event, HotspotConfig,
-    HotspotState, Mode, NmCapabilities, NmVersion, ProfileIds, is_ap_profile_id,
-    is_bridge_port_profile_id, is_bridge_profile_id, legacy, settings,
+    ErrorKind, Event, HotspotConfig, HotspotState, Mode, NmCapabilities, NmVersion, ProfileIds,
+    is_ap_profile_id, is_bridge_port_profile_id, is_bridge_profile_id, settings,
 };
 use tokio::sync::{mpsc, watch};
 use zbus::Connection;
@@ -518,24 +517,16 @@ impl Actor {
             .or_else(|_| std::env::var("LOGNAME"))
             .map_err(|_| call_error("could not determine the current user name"))?;
 
-        let find = |uuid: Option<String>, ids: [&'static str; 2]| async move {
+        let find = |uuid: Option<String>, ids: Vec<&'static str>| async move {
             profiles::find(conn, uuid.as_deref(), &ids)
                 .await
                 .map_err(call_error)
         };
-        let ap = find(
-            cfg.profile_uuid.clone(),
-            [AP_PROFILE_ID, legacy::AP_PROFILE_ID],
-        )
-        .await?;
+        let ap = find(cfg.profile_uuid.clone(), leh_model::ap_profile_ids()).await?;
         let (bridge, port) = if cfg.mode == Mode::Bridge {
             (
-                find(None, [BRIDGE_PROFILE_ID, legacy::BRIDGE_PROFILE_ID]).await?,
-                find(
-                    None,
-                    [BRIDGE_PORT_PROFILE_ID, legacy::BRIDGE_PORT_PROFILE_ID],
-                )
-                .await?,
+                find(None, leh_model::bridge_profile_ids()).await?,
+                find(None, leh_model::bridge_port_profile_ids()).await?,
             )
         } else {
             (None, None)
