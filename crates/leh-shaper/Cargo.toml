@@ -14,7 +14,9 @@ leh-model = { version = "0.2.0", path = "../leh-model" }
 leh-nm = { version = "0.2.0", path = "../leh-nm" }
 serde_json = "1.0.154"
 socket2 = { version = "0.6.5", features = ["all"] }
-tokio = { version = "1.54.1", features = ["rt-multi-thread", "macros", "time", "process", "sync", "signal", "net", "fs"] }
+tokio = { version = "1.54.1", features = ["rt-multi-thread", "macros", "time", "process", "sync", "signal", "net", "fs", "io-util"] }
 tracing = "0.1.44"
 tracing-subscriber = { version = "0.3.23", features = ["env-filter"] }
-zbus = { version = "5.13.2", default-features = false, features = ["tokio"] }
+# Default (async-io) executor: it works inside tokio, and the tokio feature
+# would also switch GPUI's own zbus (desktop portals) to tokio.
+zbus = "5.13.2"

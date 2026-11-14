@@ -16,7 +16,9 @@ thiserror = "2.0.21"
 tokio = { version = "1.54.1", features = ["rt-multi-thread", "macros", "sync", "time", "net", "fs"] }
 tracing = "0.1.44"
 uuid = { version = "1.26.1", features = ["v4"] }
-zbus = { version = "5.13.2", default-features = false, features = ["tokio"] }
+# Default (async-io) executor: it works inside tokio, and the tokio feature
+# would also switch GPUI's own zbus (desktop portals) to tokio.
+zbus = "5.13.2"
 
 [dev-dependencies]
 futures-util = "0.3.34"
