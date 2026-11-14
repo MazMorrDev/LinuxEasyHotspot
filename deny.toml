@@ -1,6 +1,28 @@
+# Only the platforms we ship. Without this, crates that are only built
+# elsewhere count too (e.g. tray-icon's GTK 3 stack on Linux, though we only
+# use tray-icon on Windows).
+[graph]
+targets = ["x86_64-unknown-linux-gnu", "x86_64-pc-windows-msvc"]
+
 [advisories]
 version = 2
 ignore = [
+    # Through GPUI / gpui-component (the GPUI interface); no fixed version we
+    # can pick. Revisit when upgrading gpui-kit.
+    { id = "RUSTSEC-2024-0384", reason = "instant: unmaintained, used by gpui-base" },
+    { id = "RUSTSEC-2024-0436", reason = "paste: unmaintained, used by gpui-component" },
+    { id = "RUSTSEC-2025-0134", reason = "rustls-pemfile: unmaintained, used by gpui-pre-reqwest (gpui-kit-assets)" },
+    { id = "RUSTSEC-2026-0206", reason = "rustybuzz: unmaintained, used by usvg/resvg (SVG icons)" },
+    { id = "RUSTSEC-2026-0192", reason = "ttf-parser: unmaintained, used by fontdb/cosmic-text and usvg" },
+    # Only in tray-icon's GTK 3 stack, which is never built: we use tray-icon
+    # on Windows only, but cargo-deny keeps its Linux edges since Linux is
+    # also a target above.
+    { id = "RUSTSEC-2024-0370", reason = "proc-macro-error: only via tray-icon's Linux deps, not built" },
+    # quick-xml 0.38 through zbus_xml 5 (AT-SPI accessibility on Linux). It
+    # only parses D-Bus introspection data from the user's own session bus, and
+    # both issues are denial of service; zbus_xml 5 can't use a fixed release.
+    { id = "RUSTSEC-2026-0194", reason = "quick-xml DoS; D-Bus introspection XML from the local session only" },
+    { id = "RUSTSEC-2026-0195", reason = "quick-xml DoS; D-Bus introspection XML from the local session only" },
     # zvariant, zvariant_derive and zbus_names were merged into zbus 6. We are
     # still on zbus 5 because ksni (tray icon, latest 0.3.7) depends on it;
     # drop these once ksni moves to zbus 6 and we upgrade.
@@ -11,8 +33,9 @@ ignore = [
 
 [licenses]
 version = 2
-# Unlicense: ksni (tray icon).
-allow = ["MIT", "Apache-2.0", "Apache-2.0 WITH LLVM-exception", "BSD-2-Clause", "BSD-3-Clause", "ISC", "Unicode-3.0", "Zlib", "MPL-2.0", "GPL-3.0-or-later", "LGPL-2.1-or-later", "Unlicense"]
+# Unlicense: ksni (tray icon). 0BSD: enum-iterator, CC0-1.0: notify and
+# tiny-keccak (all three through gpui-component).
+allow = ["MIT", "Apache-2.0", "Apache-2.0 WITH LLVM-exception", "BSD-2-Clause", "BSD-3-Clause", "ISC", "Unicode-3.0", "Zlib", "MPL-2.0", "GPL-3.0-or-later", "LGPL-2.1-or-later", "Unlicense", "0BSD", "CC0-1.0"]
 
 [bans]
 multiple-versions = "warn"

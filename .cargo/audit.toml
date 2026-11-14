@@ -1,0 +1,9 @@
+# cargo-audit (CI's rustsec/audit-check). Same reasoning as deny.toml.
+[advisories]
+ignore = [
+    # quick-xml 0.38 through zbus_xml 5 (AT-SPI accessibility in GPUI on
+    # Linux): denial of service only, on D-Bus introspection XML from the
+    # user's own session bus; zbus_xml 5 can't use a fixed release.
+    "RUSTSEC-2026-0194",
+    "RUSTSEC-2026-0195",
+]

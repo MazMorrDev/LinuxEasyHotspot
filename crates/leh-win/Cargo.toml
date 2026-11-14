@@ -1,0 +1,36 @@
+[package]
+name = "leh-win"
+description = "Windows backend for Easy Hotspot (the built-in Mobile Hotspot, WinRT tethering API)"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+leh-model = { version = "0.2.0", path = "../leh-model" }
+
+# Everything that talks to Windows is only built there; on other systems the
+# crate is just the types (so `cargo test --workspace` works on Linux).
+[target.'cfg(windows)'.dependencies]
+# WinRT: Mobile Hotspot (NetworkOperatorTetheringManager), connection
+# profiles, Wi-Fi adapters.
+windows = { version = "0.62.2", features = [
+    "Devices_Enumeration",
+    "Devices_WiFi",
+    "Foundation",
+    "Foundation_Metadata",
+    "Networking",
+    "Networking_Connectivity",
+    "Networking_NetworkOperators",
+] }
+# `IAsyncOperation`/`IVectorView` (separate crates, re-used by `windows`).
+windows-collections = "0.3.2"
+windows-future = "0.3.2"
+# ICS's hotspot-side address (`SharedAccess\Parameters\ScopeAddress`).
+windows-registry = "0.6.1"
+# Byte counters of the hotspot's virtual adapter (safe wrapper over
+# GetIfTable2). 0.36 is the newest release within the workspace's MSRV.
+sysinfo = { version = "0.36.1", default-features = false, features = ["network"] }

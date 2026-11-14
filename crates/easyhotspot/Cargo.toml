@@ -1,0 +1,39 @@
+[package]
+name = "easyhotspot"
+description = "Easy Hotspot: share your computer's internet over Wi-Fi (Linux and Windows)"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+async-channel = "2.5.0"
+chrono = { version = "0.4.45", default-features = false, features = ["clock"] }
+env_logger = { version = "0.11.8", default-features = false, features = ["auto-color", "humantime"] }
+gpui-kit = "0.9.1"
+leh-model = { version = "0.2.0", path = "../leh-model" }
+qrcode = { version = "0.14.1", default-features = false }
+rand = "0.10.3"
+serde = { version = "1.0.229", features = ["derive"] }
+toml = "1.2.1"
+
+# Linux: NetworkManager over D-Bus, the traffic-shaping helper, the
+# StatusNotifierItem tray.
+[target.'cfg(target_os = "linux")'.dependencies]
+futures-util = "0.3.34"
+ksni = { version = "0.3.7", default-features = false, features = ["async-io"] }
+leh-nm = { version = "0.2.0", path = "../leh-nm" }
+tokio = { version = "1.54.1", features = ["rt-multi-thread", "sync", "time", "process", "fs"] }
+# Default (async-io) executor: it works inside tokio, and the tokio feature
+# would also switch GPUI's own zbus (desktop portals) to tokio.
+zbus = "5.13.2"
+
+# Windows: the built-in Mobile Hotspot, a notification-area icon, the Run key.
+[target.'cfg(windows)'.dependencies]
+leh-win = { version = "0.2.0", path = "../leh-win" }
+sys-locale = "0.3.2"
+tray-icon = "0.26.1"
+windows-registry = "0.6.1"

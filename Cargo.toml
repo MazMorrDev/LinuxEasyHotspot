@@ -1,13 +1,20 @@
 [workspace]
 resolver = "3"
-members = ["crates/leh-model", "crates/leh-nm", "crates/leh-shaper", "crates/leh-gtk"]
+members = [
+    "crates/leh-model",
+    "crates/leh-nm",
+    "crates/leh-shaper",
+    "crates/leh-win",
+    "crates/leh-gtk",
+    "crates/easyhotspot",
+]
 
 [workspace.package]
 version = "0.2.0"
 edition = "2024"
 license = "GPL-3.0-or-later"
 repository = "https://github.com/OWNER/LinuxEasyHotspot"
-rust-version = "1.85"
+rust-version = "1.88"
 
 [workspace.lints.rust]
 unsafe_code = "forbid"
