@@ -128,7 +128,7 @@ impl AdapterProblem {
                 } else {
                     trf("The built-in adapter {iface}", &[("iface", iface)])
                 };
-                match driver {
+                let why = match driver {
                     Some(d) => trf(
                         "{adapter} can't create hotspots: its driver ({driver}) doesn't support access-point mode.",
                         &[("adapter", &what), ("driver", d)],
@@ -137,7 +137,13 @@ impl AdapterProblem {
                         "{adapter} can't create hotspots: its driver doesn't support access-point mode.",
                         &[("adapter", &what)],
                     ),
-                }
+                };
+                format!(
+                    "{why} {}",
+                    tr(
+                        "It can still connect this computer to Wi-Fi: if your Wi-Fi connection is on the adapter that runs the hotspot, it moves to this one while the hotspot is on."
+                    )
+                )
             }
             Self::Unmanaged { iface } => trf(
                 "{iface} isn't managed by NetworkManager, so it can't be used. Check /etc/NetworkManager/conf.d for an unmanaged-devices rule.",
@@ -262,6 +268,9 @@ pub struct UiState {
     pub auto_adapter: Option<String>,
     /// Wi-Fi adapters (or USB sticks) that can't be used, and why.
     pub adapter_problems: Vec<AdapterProblem>,
+    /// The adapter this computer's Wi-Fi connection moved to while the
+    /// hotspot runs on the one it was on.
+    pub wifi_moved_to: Option<AdapterVm>,
     /// Ethernet devices available as upstream / bridge port.
     pub ethernet: Vec<String>,
     /// Every connection that could provide internet (not the AP adapter).
@@ -760,6 +769,7 @@ pub mod demo {
             adapters: vec![AdapterVm::new("wlp2s0", true, false)],
             auto_adapter: Some("wlp2s0".into()),
             adapter_problems: Vec::new(),
+            wifi_moved_to: None,
             ethernet: vec!["enp0s31f6".into()],
             uplinks: vec![
                 UplinkVm {

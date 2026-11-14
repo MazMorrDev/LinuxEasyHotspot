@@ -59,6 +59,9 @@ pub struct Snapshot {
     /// USB Wi-Fi adapters plugged in but not usable yet (no driver, or
     /// still in "storage mode").
     pub usb_issues: Vec<UsbWifiIssue>,
+    /// Adapter that took over this computer's Wi-Fi connection while the
+    /// hotspot runs on the one it was on.
+    pub wifi_moved_to: Option<String>,
 }
 
 impl Snapshot {
@@ -146,6 +149,20 @@ struct BridgeSession {
     restore: Option<OwnedObjectPath>,
 }
 
+/// This computer's Wi-Fi connection, moved off the adapter that now runs the
+/// hotspot so the computer stays online.
+struct WifiHandoff {
+    profile: OwnedObjectPath,
+    /// The adapter it was on; it goes back there when the hotspot stops.
+    from_device: OwnedObjectPath,
+    /// Where it is now, once connected there.
+    to_iface: Option<String>,
+}
+
+/// How long the other adapter gets to join the network before the hotspot
+/// starts anyway.
+const HANDOFF_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(25);
+
 struct Actor {
     conn: Option<Connection>,
     snap: Snapshot,
@@ -157,6 +174,7 @@ struct Actor {
     /// NM's DeviceAdded/DeviceRemoved (adapters plugged in or out).
     hotplug: Option<Pin<Box<dyn Stream<Item = ()> + Send>>>,
     bridge: Option<BridgeSession>,
+    wifi: Option<WifiHandoff>,
 }
 
 async fn next_hotplug(s: &mut Option<Pin<Box<dyn Stream<Item = ()> + Send>>>) -> Option<()> {
@@ -192,6 +210,7 @@ impl Actor {
             nm_owner: None,
             hotplug: None,
             bridge: None,
+            wifi: None,
         }
     }
 
@@ -246,6 +265,7 @@ impl Actor {
                 self.active = None;
                 self.snap.running = None;
                 self.teardown_bridge().await;
+                self.restore_wifi().await;
             }
             _ => {}
         }
@@ -501,6 +521,7 @@ impl Actor {
         self.apply(Event::StartRequested).await;
         if let Err(ev) = self.activate(&conn, &caps, cfg, &dev).await {
             self.teardown_bridge().await;
+            self.restore_wifi().await;
             self.apply(ev).await;
         }
     }
@@ -592,10 +613,27 @@ impl Actor {
             l3_iface = leh_model::BRIDGE_IFACE.into();
         }
 
+        // The adapter is this computer's own Wi-Fi connection: starting the
+        // hotspot on it would drop that connection, so move it to another
+        // adapter first if there is one.
+        if dev.is_connected() && dev.active_connection.as_str() != "/" {
+            self.wifi = hand_off_wifi(
+                conn,
+                &nm,
+                dev,
+                &self.snap.devices,
+                cfg.upstream_iface.as_deref(),
+            )
+            .await;
+            self.snap.wifi_moved_to = self.wifi.as_ref().and_then(|h| h.to_iface.clone());
+            self.publish();
+        }
+
         // Router/Local-only: make sure the chosen internet source is up. Which
         // connection hotspot traffic actually uses still follows the default
         // route; routing only the hotspot through it needs the helper.
         if cfg.mode != Mode::Bridge
+            && self.wifi.is_none()
             && let Some(up) = cfg.upstream_iface.as_deref()
             && let Some(dev) = self.snap.devices.iter().find(|d| d.iface == up)
             && !dev.is_connected()
@@ -709,6 +747,107 @@ impl Actor {
             tracing::warn!(error = %e, "could not restore Ethernet profile");
         }
     }
+
+    /// Gives the Wi-Fi connection moved by [`hand_off_wifi`] back to the
+    /// adapter it was on. Safe to call when nothing was moved.
+    async fn restore_wifi(&mut self) {
+        self.snap.wifi_moved_to = None;
+        let (Some(conn), Some(h)) = (self.conn.clone(), self.wifi.take()) else {
+            return;
+        };
+        tracing::info!("moving the Wi-Fi connection back");
+        let Ok(nm) = NetworkManagerProxy::new(&conn).await else {
+            return;
+        };
+        if let Err(e) = nm
+            .activate_connection(&h.profile.as_ref(), &h.from_device.as_ref(), &root())
+            .await
+        {
+            tracing::warn!(error = %e, "could not move the Wi-Fi connection back");
+        }
+    }
+}
+
+/// Moves the Wi-Fi connection active on `ap` to another free Wi-Fi adapter
+/// and waits (up to [`HANDOFF_TIMEOUT`]) until it is connected there. NM
+/// deactivates it on `ap` by itself, since a profile is active on one device
+/// at a time.
+async fn hand_off_wifi(
+    conn: &Connection,
+    nm: &NetworkManagerProxy<'_>,
+    ap: &DeviceInfo,
+    devices: &[DeviceInfo],
+    wanted: Option<&str>,
+) -> Option<WifiHandoff> {
+    let ac = ActiveConnectionProxy::builder(conn)
+        .path(ap.active_connection.clone())
+        .ok()?
+        .build()
+        .await
+        .ok()?;
+    if is_ap_profile_id(&ac.id().await.ok()?) {
+        return None;
+    }
+    let profile = ac.connection().await.ok()?;
+    let Some(target) = devices::pick_wifi_client(devices, &ap.iface, wanted) else {
+        tracing::info!(
+            iface = ap.iface,
+            "the hotspot adapter is this computer's Wi-Fi connection and no other adapter can take it over"
+        );
+        return None;
+    };
+    tracing::info!(
+        from = ap.iface,
+        to = target.iface,
+        "moving the Wi-Fi connection"
+    );
+    if let Err(e) = nm
+        .activate_connection(&profile.as_ref(), &target.path.as_ref(), &root())
+        .await
+    {
+        // E.g. the profile is locked to the first adapter's MAC address.
+        tracing::warn!(error = %e, to = target.iface, "could not move the Wi-Fi connection");
+        return None;
+    }
+    let mut handoff = WifiHandoff {
+        profile,
+        from_device: ap.path.clone(),
+        to_iface: None,
+    };
+    let dev = DeviceProxy::builder(conn)
+        .path(target.path.clone())
+        .ok()?
+        .build()
+        .await
+        .ok()?;
+    let joined = tokio::time::timeout(HANDOFF_TIMEOUT, async {
+        let since = std::time::Instant::now();
+        let mut trying = false;
+        loop {
+            match dev.state().await {
+                Ok(dev_state::ACTIVATED) => return true,
+                // Back to disconnected after trying (or never started): failed.
+                Ok(s) if s <= dev_state::DISCONNECTED => {
+                    if trying || since.elapsed() > std::time::Duration::from_secs(5) {
+                        return false;
+                    }
+                }
+                Ok(_) => trying = true,
+                Err(_) => return false,
+            }
+            tokio::time::sleep(std::time::Duration::from_millis(300)).await;
+        }
+    })
+    .await
+    .unwrap_or(false);
+    if joined {
+        tracing::info!(iface = target.iface, "Wi-Fi connection moved");
+        handoff.to_iface = Some(target.iface.clone());
+    } else {
+        tracing::warn!(iface = target.iface, "the other adapter didn't connect");
+    }
+    // Either way the connection left `ap`; give it back when the hotspot stops.
+    Some(handoff)
 }
 
 /// The saved profile active on `dev` before we took it over, unless it is ours.

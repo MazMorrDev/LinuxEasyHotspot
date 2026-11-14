@@ -96,6 +96,7 @@ pub struct Digest {
     saved: BTreeMap<String, (String, Access)>,
     adapters: Vec<(String, String)>,
     problems: Vec<String>,
+    wifi_moved_to: Option<String>,
     error: Option<(String, String)>,
     helper: HelperStatus,
     used_bytes: u64,
@@ -124,6 +125,7 @@ impl Digest {
                 .map(|a| (a.iface.clone(), a.label()))
                 .collect(),
             problems: s.adapter_problems.iter().map(|p| p.explain()).collect(),
+            wifi_moved_to: s.wifi_moved_to.as_ref().map(|a| a.label()),
             error: s.error.clone(),
             helper: s.helper,
             used_bytes: s.traffic.down_bytes + s.traffic.up_bytes,
@@ -275,6 +277,18 @@ pub fn record(before: &Digest, s: &mut UiState) {
         if !before.problems.contains(p) {
             s.log(EventKind::Warning, p.clone());
         }
+    }
+
+    if let Some(adapter) = &now.wifi_moved_to
+        && before.wifi_moved_to.as_ref() != Some(adapter)
+    {
+        s.log(
+            EventKind::Info,
+            trf(
+                "This computer's Wi-Fi connection moved to {adapter}, so it stays online",
+                &[("adapter", adapter)],
+            ),
+        );
     }
 
     if let Some((title, details)) = &now.error

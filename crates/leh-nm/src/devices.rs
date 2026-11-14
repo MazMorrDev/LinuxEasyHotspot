@@ -232,6 +232,27 @@ pub fn pick_ap<'a>(devices: &'a [DeviceInfo], wanted: Option<&str>) -> Option<&'
     }
 }
 
+/// Where this computer's Wi-Fi connection can go while `ap` runs the hotspot:
+/// another managed Wi-Fi adapter that is free (e.g. a USB stick whose driver
+/// can't create hotspots but connects to networks just fine). `wanted` is the
+/// internet source picked in Settings, preferred when it qualifies.
+pub fn pick_wifi_client<'a>(
+    devices: &'a [DeviceInfo],
+    ap: &str,
+    wanted: Option<&str>,
+) -> Option<&'a DeviceInfo> {
+    devices
+        .iter()
+        .filter(|d| {
+            d.managed
+                && d.is_wifi()
+                && d.iface != ap
+                && d.is_usable()
+                && d.active_connection.as_str() == "/"
+        })
+        .min_by_key(|d| Some(d.iface.as_str()) != wanted)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -295,6 +316,40 @@ mod tests {
         assert_eq!(
             pick_ap(&[internal, unmanaged], None).unwrap().iface,
             "wlp3s0"
+        );
+    }
+
+    #[test]
+    fn wifi_moves_to_a_free_adapter() {
+        let wifi = |ap| DeviceKind::Wifi {
+            supports_ap: ap,
+            supports_5ghz: false,
+        };
+        let mut internal = dev("wlp3s0", wifi(true), dev_state::ACTIVATED);
+        internal.active_connection = OwnedObjectPath::try_from("/ac/1").unwrap();
+        let mut stick = dev("wlx90de80", wifi(false), dev_state::DISCONNECTED);
+        stick.bus = Bus::Usb;
+        let eth = dev("enp2s0", DeviceKind::Ethernet, dev_state::DISCONNECTED);
+        let devs = vec![internal.clone(), stick.clone(), eth];
+        assert_eq!(
+            pick_wifi_client(&devs, "wlp3s0", None).unwrap().iface,
+            "wlx90de80"
+        );
+        // Never the AP adapter itself, an Ethernet card, or a busy adapter.
+        assert!(pick_wifi_client(&devs, "wlx90de80", None).is_none());
+        // Unplugged/off adapters don't count.
+        let mut off = stick.clone();
+        off.state = dev_state::UNAVAILABLE;
+        assert!(pick_wifi_client(&[internal.clone(), off], "wlp3s0", None).is_none());
+        // The chosen internet source wins among several.
+        let mut other = stick.clone();
+        other.iface = "wlx11".into();
+        let devs = vec![internal, stick, other];
+        assert_eq!(
+            pick_wifi_client(&devs, "wlp3s0", Some("wlx11"))
+                .unwrap()
+                .iface,
+            "wlx11"
         );
     }
 }

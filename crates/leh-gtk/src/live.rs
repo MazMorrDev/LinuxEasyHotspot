@@ -96,6 +96,13 @@ impl Live {
             .collect();
         st.auto_adapter = snap.pick_ap(None).map(|d| d.iface.clone());
         st.adapter_problems = adapter_problems(&snap);
+        st.wifi_moved_to = snap.wifi_moved_to.as_deref().map(|iface| {
+            let d = snap.devices.iter().find(|d| d.iface == iface);
+            AdapterVm {
+                product: d.and_then(|d| d.product.clone()),
+                ..AdapterVm::new(iface, false, d.is_some_and(|d| d.is_usb()))
+            }
+        });
         st.ethernet = snap.ethernet_devices().map(|d| d.iface.clone()).collect();
         let ap_iface = snap
             .running
@@ -353,6 +360,7 @@ pub fn initial_state(cfg: HotspotConfig) -> UiState {
     st.adapters.clear();
     st.auto_adapter = None;
     st.adapter_problems.clear();
+    st.wifi_moved_to = None;
     st.traffic = Traffic::default();
     st.ethernet.clear();
     st.uplinks.clear();
