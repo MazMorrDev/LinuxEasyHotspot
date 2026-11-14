@@ -5,139 +5,1258 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
-#: crates/leh-gtk/src/activity.rs:152 crates/leh-gtk/src/pages/home.rs:126 crates/leh-gtk/src/pages/settings.rs:70 crates/leh-gtk/src/state.rs:855
+#: crates/easyhotspot/src/activity.rs:123 crates/easyhotspot/src/state.rs:918 crates/easyhotspot/src/ui/home.rs:24 crates/easyhotspot/src/ui/settings.rs:75
 msgid "Router"
 msgstr ""
 
-#: crates/leh-gtk/src/activity.rs:153 crates/leh-gtk/src/pages/home.rs:126 crates/leh-gtk/src/pages/settings.rs:75
+#: crates/easyhotspot/src/activity.rs:124 crates/easyhotspot/src/ui/home.rs:24 crates/easyhotspot/src/ui/settings.rs:81 crates/leh-gtk/src/activity.rs:155
 msgid "Bridge"
 msgstr ""
 
-#: crates/leh-gtk/src/activity.rs:154 crates/leh-gtk/src/pages/home.rs:126 crates/leh-gtk/src/pages/settings.rs:80
+#: crates/easyhotspot/src/activity.rs:125 crates/easyhotspot/src/ui/home.rs:24 crates/easyhotspot/src/ui/settings.rs:91 crates/leh-gtk/src/activity.rs:156
 msgid "Local only"
 msgstr ""
 
-#: crates/leh-gtk/src/activity.rs:163 crates/leh-gtk/src/state.rs:851
+#: crates/easyhotspot/src/activity.rs:134 crates/easyhotspot/src/state.rs:914 crates/leh-gtk/src/activity.rs:165 crates/leh-gtk/src/state.rs:861
 #, no-c-format
 msgid "Hotspot on: {details}"
 msgstr ""
 
-#: crates/leh-gtk/src/activity.rs:168
+#: crates/easyhotspot/src/activity.rs:139 crates/leh-gtk/src/activity.rs:170
 #, no-c-format
 msgid "Hotspot off · {used} used in this session"
 msgstr ""
 
-#: crates/leh-gtk/src/activity.rs:173
+#: crates/easyhotspot/src/activity.rs:144 crates/leh-gtk/src/activity.rs:175
 msgid "Hotspot off"
 msgstr ""
 
-#: crates/leh-gtk/src/activity.rs:187 crates/leh-gtk/src/state.rs:869
+#: crates/easyhotspot/src/activity.rs:158 crates/easyhotspot/src/state.rs:932 crates/leh-gtk/src/activity.rs:189 crates/leh-gtk/src/state.rs:879
 #, no-c-format
 msgid "{name} wants to join"
 msgstr ""
 
-#: crates/leh-gtk/src/activity.rs:192
+#: crates/easyhotspot/src/activity.rs:163 crates/leh-gtk/src/activity.rs:194
 #, no-c-format
 msgid "{name} tried to connect (blocked)"
 msgstr ""
 
-#: crates/leh-gtk/src/activity.rs:200 crates/leh-gtk/src/state.rs:864
+#: crates/easyhotspot/src/activity.rs:171 crates/easyhotspot/src/state.rs:927 crates/leh-gtk/src/activity.rs:202 crates/leh-gtk/src/state.rs:874
 #, no-c-format
 msgid "{name} connected"
 msgstr ""
 
-#: crates/leh-gtk/src/activity.rs:208
+#: crates/easyhotspot/src/activity.rs:179 crates/leh-gtk/src/activity.rs:210
 #, no-c-format
 msgid "{name} disconnected"
 msgstr ""
 
-#: crates/leh-gtk/src/activity.rs:216 crates/leh-gtk/src/state.rs:877
+#: crates/easyhotspot/src/activity.rs:187 crates/easyhotspot/src/state.rs:940 crates/leh-gtk/src/activity.rs:218 crates/leh-gtk/src/state.rs:887
 #, no-c-format
 msgid "{name} reached its data cap"
 msgstr ""
 
-#: crates/leh-gtk/src/activity.rs:234
+#: crates/easyhotspot/src/activity.rs:205 crates/leh-gtk/src/activity.rs:236
 #, no-c-format
 msgid "{name} allowed"
 msgstr ""
 
-#: crates/leh-gtk/src/activity.rs:238 crates/leh-gtk/src/state.rs:873
+#: crates/easyhotspot/src/activity.rs:209 crates/easyhotspot/src/state.rs:936 crates/leh-gtk/src/activity.rs:240 crates/leh-gtk/src/state.rs:883
 #, no-c-format
 msgid "{name} blocked"
 msgstr ""
 
-#: crates/leh-gtk/src/activity.rs:242
+#: crates/easyhotspot/src/activity.rs:213 crates/leh-gtk/src/activity.rs:244
 #, no-c-format
 msgid "{name} must be approved again"
 msgstr ""
 
-#: crates/leh-gtk/src/activity.rs:250
+#: crates/easyhotspot/src/activity.rs:221 crates/leh-gtk/src/activity.rs:252
 #, no-c-format
 msgid "{name} forgotten"
 msgstr ""
 
-#: crates/leh-gtk/src/activity.rs:261
+#: crates/easyhotspot/src/activity.rs:232 crates/leh-gtk/src/activity.rs:263
 #, no-c-format
 msgid "Wi-Fi adapter connected: {adapter}"
 msgstr ""
 
-#: crates/leh-gtk/src/activity.rs:269
+#: crates/easyhotspot/src/activity.rs:240 crates/leh-gtk/src/activity.rs:271
 #, no-c-format
 msgid "Wi-Fi adapter removed: {adapter}"
 msgstr ""
 
-#: crates/leh-gtk/src/activity.rs:289
-msgid "Speed limits paused: Linux Easy Hotspot needs your authorization"
+#: crates/easyhotspot/src/activity.rs:256 crates/leh-gtk/src/activity.rs:287
+#, no-c-format
+msgid "This computer's Wi-Fi connection moved to {adapter}, so it stays online"
 msgstr ""
 
-#: crates/leh-gtk/src/activity.rs:292
+#: crates/easyhotspot/src/activity.rs:272
+msgid "Speed limits paused: Easy Hotspot needs your authorization"
+msgstr ""
+
+#: crates/easyhotspot/src/activity.rs:275 crates/leh-gtk/src/activity.rs:306
 msgid "Speed limits authorized"
 msgstr ""
 
-#: crates/leh-gtk/src/app.rs:191
-msgid "Switch to Bridge mode?"
-msgstr ""
-
-#: crates/leh-gtk/src/app.rs:192
-msgid "Devices will join your wired network and get addresses from your router. While the hotspot is on, this computer's wired connection moves into a bridge: it keeps the same address on your network, but drops for a few seconds when the hotspot starts and stops.\n\nTo share files with devices on the hotspot (for example with Warpinator), set those apps to use any network interface, or use Router mode, which never touches the wired connection."
-msgstr ""
-
-#: crates/leh-gtk/src/app.rs:196 crates/leh-gtk/src/pages/device.rs:133
-msgid "Cancel"
-msgstr ""
-
-#: crates/leh-gtk/src/app.rs:197
-msgid "Use Bridge mode"
-msgstr ""
-
-#: crates/leh-gtk/src/app.rs:217
-msgid "The next start will fail"
-msgstr ""
-
-#: crates/leh-gtk/src/app.rs:245
-msgid "New Wi-Fi adapter found"
-msgstr ""
-
-#: crates/leh-gtk/src/app.rs:254 crates/leh-gtk/src/app.rs:870
+#: crates/easyhotspot/src/backend/linux.rs:120 crates/easyhotspot/src/backend/windows.rs:197 crates/easyhotspot/src/model.rs:288 crates/leh-gtk/src/app.rs:254
 #, no-c-format
 msgid "“{name}” wants to join — see Clients"
 msgstr ""
 
-#: crates/leh-gtk/src/app.rs:256
+#: crates/easyhotspot/src/backend/linux.rs:222 crates/easyhotspot/src/backend/windows.rs:163 crates/easyhotspot/src/model.rs:349 crates/leh-gtk/src/app.rs:552
+msgid "Couldn't start the hotspot"
+msgstr ""
+
+#: crates/easyhotspot/src/backend/linux.rs:228 crates/leh-gtk/src/live.rs:157
+msgid "NetworkManager reported an error"
+msgstr ""
+
+#: crates/easyhotspot/src/backend/linux.rs:607 crates/leh-gtk/src/live.rs:599
+#, no-c-format
+msgid "Couldn't apply speed limits: {error}"
+msgstr ""
+
+#: crates/easyhotspot/src/backend/linux.rs:748 crates/leh-gtk/src/live.rs:779
+msgid "the source folder isn't available"
+msgstr ""
+
+#: crates/easyhotspot/src/backend/linux.rs:749 crates/leh-gtk/src/live.rs:780
+msgid "cargo wasn't found"
+msgstr ""
+
+#: crates/easyhotspot/src/backend/linux.rs:750 crates/leh-gtk/src/live.rs:781
+msgid "Building the helper…"
+msgstr ""
+
+#: crates/easyhotspot/src/backend/linux.rs:763 crates/leh-gtk/src/live.rs:794
+msgid "build failed"
+msgstr ""
+
+#: crates/easyhotspot/src/backend/linux.rs:767 crates/leh-gtk/src/live.rs:798
+msgid "Waiting for your password…"
+msgstr ""
+
+#: crates/easyhotspot/src/backend/linux.rs:785 crates/leh-gtk/src/live.rs:816
+msgid "install failed"
+msgstr ""
+
+#: crates/easyhotspot/src/backend/windows.rs:168
+msgid "Windows reported an error"
+msgstr ""
+
+#: crates/easyhotspot/src/model.rs:225 crates/leh-gtk/src/app.rs:217
+msgid "The next start will fail"
+msgstr ""
+
+#: crates/easyhotspot/src/model.rs:253 crates/leh-gtk/src/app.rs:245
+msgid "New Wi-Fi adapter found"
+msgstr ""
+
+#: crates/easyhotspot/src/model.rs:290 crates/leh-gtk/src/app.rs:256
 #, no-c-format
 msgid "“{name}” joined with the default settings"
 msgstr ""
 
-#: crates/leh-gtk/src/app.rs:273 crates/leh-gtk/src/app.rs:311
+#: crates/easyhotspot/src/model.rs:358 crates/leh-gtk/src/app.rs:561
+msgid "Hotspot stopped"
+msgstr ""
+
+#: crates/easyhotspot/src/model.rs:364 crates/leh-gtk/src/app.rs:567
+msgid "New password generated"
+msgstr ""
+
+#: crates/easyhotspot/src/model.rs:368 crates/leh-gtk/src/app.rs:572
+msgid "Password copied"
+msgstr ""
+
+#: crates/easyhotspot/src/model.rs:371
+msgid "Bridge mode isn't available on this system"
+msgstr ""
+
+#: crates/easyhotspot/src/model.rs:378 crates/leh-gtk/src/app.rs:580
+#, no-c-format
+msgid "Local only needs NetworkManager 1.52 or newer (you have {version})"
+msgstr ""
+
+#: crates/easyhotspot/src/model.rs:383
+msgid "Local only isn't available on this system"
+msgstr ""
+
+#: crates/easyhotspot/src/model.rs:417 crates/leh-gtk/src/app.rs:616
+msgid "This adapter doesn't support 5 GHz"
+msgstr ""
+
+#: crates/easyhotspot/src/model.rs:452 crates/leh-gtk/src/app.rs:649
+msgid "Diagnostics export is coming in a later version"
+msgstr ""
+
+#: crates/easyhotspot/src/model.rs:455 crates/leh-gtk/src/app.rs:652
+msgid "Demo: diagnostics would be saved to a .txt file"
+msgstr ""
+
+#: crates/easyhotspot/src/model.rs:459 crates/leh-gtk/src/app.rs:656
+msgid "Device allowed"
+msgstr ""
+
+#: crates/easyhotspot/src/model.rs:463 crates/leh-gtk/src/app.rs:660
+msgid "Device blocked"
+msgstr ""
+
+#: crates/easyhotspot/src/model.rs:488 crates/leh-gtk/src/app.rs:699
+msgid "Device forgotten"
+msgstr ""
+
+#: crates/easyhotspot/src/model.rs:500 crates/leh-gtk/src/app.rs:711
+msgid "Demo: the system would ask for your password here"
+msgstr ""
+
+#: crates/easyhotspot/src/model.rs:512 crates/leh-gtk/src/app.rs:722
+msgid "Helper found — per-device control enabled"
+msgstr ""
+
+#: crates/easyhotspot/src/model.rs:568 crates/leh-gtk/src/app.rs:884
+msgid "Helper installed"
+msgstr ""
+
+#: crates/easyhotspot/src/model.rs:574 crates/leh-gtk/src/app.rs:890
+msgid "Installation cancelled"
+msgstr ""
+
+#: crates/easyhotspot/src/model.rs:579 crates/leh-gtk/src/app.rs:899
+msgid "Copied to the clipboard"
+msgstr ""
+
+#: crates/easyhotspot/src/model.rs:586 crates/leh-gtk/src/app.rs:905
+msgid "Helper found: per-device control is on"
+msgstr ""
+
+#: crates/easyhotspot/src/model.rs:667 crates/leh-gtk/src/app.rs:818
+#, no-c-format
+msgid "USB Wi-Fi adapter found ({iface}). Choose it in Settings → Hotspot adapter"
+msgstr ""
+
+#: crates/easyhotspot/src/model.rs:672 crates/leh-gtk/src/app.rs:809
+#, no-c-format
+msgid "USB Wi-Fi adapter found ({iface}). It will be used the next time the hotspot starts"
+msgstr ""
+
+#: crates/easyhotspot/src/model.rs:677 crates/leh-gtk/src/app.rs:814
+#, no-c-format
+msgid "USB Wi-Fi adapter found ({iface})"
+msgstr ""
+
+#: crates/easyhotspot/src/model.rs:682 crates/leh-gtk/src/app.rs:829
+msgid "A Wi-Fi adapter can't be used — see Settings"
+msgstr ""
+
+#: crates/easyhotspot/src/state.rs:104 crates/easyhotspot/src/state.rs:110 crates/leh-gtk/src/state.rs:81 crates/leh-gtk/src/state.rs:440
+#, no-c-format
+msgid "USB adapter ({iface})"
+msgstr ""
+
+#: crates/easyhotspot/src/state.rs:112 crates/leh-gtk/src/state.rs:83
+#, no-c-format
+msgid "Built-in Wi-Fi ({iface})"
+msgstr ""
+
+#: crates/easyhotspot/src/state.rs:118 crates/leh-gtk/src/state.rs:89
+msgid "2.4 and 5 GHz"
+msgstr ""
+
+#: crates/easyhotspot/src/state.rs:120 crates/leh-gtk/src/state.rs:91
+msgid "2.4 GHz only"
+msgstr ""
+
+#: crates/easyhotspot/src/state.rs:158 crates/leh-gtk/src/state.rs:127
+#, no-c-format
+msgid "The USB adapter {iface}"
+msgstr ""
+
+#: crates/easyhotspot/src/state.rs:160 crates/leh-gtk/src/state.rs:129
+#, no-c-format
+msgid "The built-in adapter {iface}"
+msgstr ""
+
+#: crates/easyhotspot/src/state.rs:163 crates/leh-gtk/src/state.rs:132
+#, no-c-format
+msgid "{adapter} can't create hotspots: its driver ({driver}) doesn't support access-point mode."
+msgstr ""
+
+#: crates/easyhotspot/src/state.rs:167 crates/leh-gtk/src/state.rs:136
+#, no-c-format
+msgid "{adapter} can't create hotspots: its driver doesn't support access-point mode."
+msgstr ""
+
+#: crates/easyhotspot/src/state.rs:174 crates/leh-gtk/src/state.rs:143
+msgid "It can still connect this computer to Wi-Fi: if your Wi-Fi connection is on the adapter that runs the hotspot, it moves to this one while the hotspot is on."
+msgstr ""
+
+#: crates/easyhotspot/src/state.rs:179 crates/leh-gtk/src/state.rs:148
+#, no-c-format
+msgid "{iface} isn't managed by NetworkManager, so it can't be used. Check /etc/NetworkManager/conf.d for an unmanaged-devices rule."
+msgstr ""
+
+#: crates/easyhotspot/src/state.rs:183 crates/leh-gtk/src/state.rs:152
+#, no-c-format
+msgid "{iface} is unavailable: it may be switched off (airplane mode) or missing firmware."
+msgstr ""
+
+#: crates/easyhotspot/src/state.rs:187 crates/leh-gtk/src/state.rs:156
+#, no-c-format
+msgid "The USB Wi-Fi adapter {device} is in storage mode (it shows up as a disk with its Windows driver). Install usb-modeswitch (sudo apt install usb-modeswitch), then unplug it and plug it in again."
+msgstr ""
+
+#: crates/easyhotspot/src/state.rs:191 crates/leh-gtk/src/state.rs:160
+#, no-c-format
+msgid "The USB Wi-Fi adapter {device} has no driver installed. Search the web for a Linux driver for “{id}”."
+msgstr ""
+
+#: crates/easyhotspot/src/state.rs:234 crates/leh-gtk/src/state.rs:203
+msgid "Ethernet"
+msgstr ""
+
+#: crates/easyhotspot/src/state.rs:235 crates/leh-gtk/src/state.rs:204
+msgid "Wi-Fi"
+msgstr ""
+
+#: crates/easyhotspot/src/state.rs:236 crates/leh-gtk/src/state.rs:205
+msgid "Mobile broadband"
+msgstr ""
+
+#: crates/easyhotspot/src/state.rs:250 crates/easyhotspot/src/ui/settings.rs:184 crates/leh-gtk/src/pages/settings.rs:388 crates/leh-gtk/src/state.rs:219
+msgid "in use"
+msgstr ""
+
+#: crates/easyhotspot/src/state.rs:254 crates/leh-gtk/src/state.rs:223
+msgid "not connected, connects when the hotspot starts"
+msgstr ""
+
+#: crates/easyhotspot/src/state.rs:354 crates/easyhotspot/src/state.rs:365 crates/easyhotspot/src/state.rs:942 crates/leh-gtk/src/state.rs:318
+msgid "Unknown device"
+msgstr ""
+
+#: crates/easyhotspot/src/state.rs:443 crates/leh-gtk/src/state.rs:407
+#, no-c-format
+msgid "Sharing internet from {source}"
+msgstr ""
+
+#: crates/easyhotspot/src/state.rs:444 crates/leh-gtk/src/state.rs:408
+msgid "Hotspot on, but this computer has no internet right now"
+msgstr ""
+
+#: crates/easyhotspot/src/state.rs:451 crates/leh-gtk/src/state.rs:415
+msgid "your wired network"
+msgstr ""
+
+#: crates/easyhotspot/src/state.rs:452 crates/leh-gtk/src/state.rs:416
+#, no-c-format
+msgid "Bridged to {source}"
+msgstr ""
+
+#: crates/easyhotspot/src/state.rs:460 crates/leh-gtk/src/state.rs:424
+msgid "Local network only (no internet)"
+msgstr ""
+
+#: crates/easyhotspot/src/state.rs:469 crates/easyhotspot/src/state.rs:470 crates/easyhotspot/src/state.rs:478 crates/easyhotspot/src/ui/settings.rs:320
+msgid "5 GHz"
+msgstr ""
+
+#: crates/easyhotspot/src/state.rs:471 crates/easyhotspot/src/state.rs:472 crates/easyhotspot/src/state.rs:479 crates/easyhotspot/src/ui/settings.rs:319
+msgid "2.4 GHz"
+msgstr ""
+
+#: crates/easyhotspot/src/state.rs:475 crates/leh-gtk/src/state.rs:438
+#, no-c-format
+msgid "ch {n}"
+msgstr ""
+
+#: crates/easyhotspot/src/state.rs:503 crates/easyhotspot/src/state.rs:572 crates/easyhotspot/src/ui/widgets.rs:177 crates/leh-gtk/src/pages/settings.rs:200
+msgid "Unlimited"
+msgstr ""
+
+#: crates/easyhotspot/src/state.rs:528 crates/easyhotspot/src/ui/device.rs:145 crates/leh-gtk/src/pages/device.rs:203 crates/leh-gtk/src/state.rs:484
+msgid "Not connected"
+msgstr ""
+
+#: crates/easyhotspot/src/state.rs:532 crates/leh-gtk/src/state.rs:488
+msgid "Last connected just now"
+msgstr ""
+
+#: crates/easyhotspot/src/state.rs:565 crates/leh-gtk/src/state.rs:521
+#, no-c-format
+msgid "{rate} (throttled)"
+msgstr ""
+
+#: crates/easyhotspot/src/state.rs:569 crates/leh-gtk/src/state.rs:525
+msgid "Blocked by data cap"
+msgstr ""
+
+#: crates/easyhotspot/src/state.rs:574 crates/leh-gtk/src/state.rs:530
+#, no-c-format
+msgid "{rate} limit"
+msgstr ""
+
+#: crates/easyhotspot/src/state.rs:577 crates/leh-gtk/src/state.rs:533
+msgid "High priority"
+msgstr ""
+
+#: crates/easyhotspot/src/state.rs:578 crates/leh-gtk/src/state.rs:534
+msgid "Low priority"
+msgstr ""
+
+#: crates/easyhotspot/src/state.rs:611 crates/easyhotspot/src/ui/settings.rs:623 crates/leh-gtk/src/state.rs:566 crates/leh-gtk/src/widgets.rs:306
+msgid "Normal"
+msgstr ""
+
+#: crates/easyhotspot/src/state.rs:612 crates/leh-gtk/src/state.rs:567
+msgid "Next start fails"
+msgstr ""
+
+#: crates/easyhotspot/src/state.rs:616 crates/leh-gtk/src/state.rs:571
+msgid "No AP-capable adapter"
+msgstr ""
+
+#: crates/easyhotspot/src/state.rs:621 crates/leh-gtk/src/state.rs:576
+msgid "NetworkManager missing"
+msgstr ""
+
+#: crates/easyhotspot/src/state.rs:626 crates/leh-gtk/src/state.rs:581
+msgid "Bridge without Ethernet"
+msgstr ""
+
+#: crates/easyhotspot/src/state.rs:631 crates/leh-gtk/src/state.rs:586
+msgid "Adapter unplugged"
+msgstr ""
+
+#: crates/easyhotspot/src/state.rs:633 crates/leh-gtk/src/state.rs:588
+msgid "Helper: ready"
+msgstr ""
+
+#: crates/easyhotspot/src/state.rs:637 crates/easyhotspot/src/ui/dialogs.rs:185 crates/leh-gtk/src/app.rs:943 crates/leh-gtk/src/state.rs:592
+msgid "Helper: not installed"
+msgstr ""
+
+#: crates/easyhotspot/src/state.rs:642 crates/leh-gtk/src/state.rs:597
+msgid "Helper: not authorized"
+msgstr ""
+
+#: crates/easyhotspot/src/state.rs:644 crates/leh-gtk/src/state.rs:599
+msgid "Helper: too old"
+msgstr ""
+
+#: crates/easyhotspot/src/state.rs:645 crates/leh-gtk/src/state.rs:600
+msgid "No devices"
+msgstr ""
+
+#: crates/easyhotspot/src/state.rs:646 crates/leh-gtk/src/state.rs:601
+msgid "A new device joins"
+msgstr ""
+
+#: crates/easyhotspot/src/state.rs:650 crates/leh-gtk/src/state.rs:605
+msgid "USB Wi-Fi adapters plugged in"
+msgstr ""
+
+#: crates/easyhotspot/src/state.rs:655
+msgid "Windows (Mobile Hotspot)"
+msgstr ""
+
+#: crates/easyhotspot/src/state.rs:466 crates/leh-gtk/src/state.rs:430
+#, no-c-format
+msgid "{n} device"
+msgid_plural "{n} devices"
+msgstr[0] ""
+msgstr[1] ""
+
+#: crates/easyhotspot/src/state.rs:535 crates/leh-gtk/src/state.rs:491
+#, no-c-format
+msgid "Last connected {n} minute ago"
+msgid_plural "Last connected {n} minutes ago"
+msgstr[0] ""
+msgstr[1] ""
+
+#: crates/easyhotspot/src/state.rs:542 crates/leh-gtk/src/state.rs:498
+#, no-c-format
+msgid "Last connected {n} hour ago"
+msgid_plural "Last connected {n} hours ago"
+msgstr[0] ""
+msgstr[1] ""
+
+#: crates/easyhotspot/src/state.rs:549 crates/leh-gtk/src/state.rs:505
+#, no-c-format
+msgid "Last connected {n} day ago"
+msgid_plural "Last connected {n} days ago"
+msgstr[0] ""
+msgstr[1] ""
+
+#: crates/easyhotspot/src/tray/mod.rs:51 crates/leh-gtk/src/tray.rs:30
+msgid "Working…"
+msgstr ""
+
+#: crates/easyhotspot/src/tray/mod.rs:67 crates/easyhotspot/src/ui/clients.rs:71 crates/easyhotspot/src/ui/home.rs:193 crates/leh-gtk/src/pages/clients.rs:304
+msgid "Hotspot is off"
+msgstr ""
+
+#: crates/easyhotspot/src/tray/mod.rs:92 crates/leh-gtk/src/tray.rs:104
+#, no-c-format
+msgid "Allow “{name}”"
+msgstr ""
+
+#: crates/easyhotspot/src/tray/mod.rs:98 crates/leh-gtk/src/tray.rs:112
+#, no-c-format
+msgid "Block “{name}”"
+msgstr ""
+
+#: crates/easyhotspot/src/tray/mod.rs:107 crates/easyhotspot/src/ui/home.rs:314 crates/leh-gtk/src/pages/home.rs:276 crates/leh-gtk/src/tray.rs:123
+msgid "Stop hotspot"
+msgstr ""
+
+#: crates/easyhotspot/src/tray/mod.rs:109 crates/easyhotspot/src/ui/home.rs:173 crates/leh-gtk/src/pages/home.rs:189 crates/leh-gtk/src/pages/home.rs:427
+msgid "Start hotspot"
+msgstr ""
+
+#: crates/easyhotspot/src/tray/mod.rs:116 crates/leh-gtk/src/tray.rs:135
+msgid "Show window"
+msgstr ""
+
+#: crates/easyhotspot/src/tray/mod.rs:123 crates/easyhotspot/src/ui/dialogs.rs:247 crates/easyhotspot/src/ui/mod.rs:534 crates/leh-gtk/src/app.rs:484
+msgid "Quit"
+msgstr ""
+
+#: crates/easyhotspot/src/tray/mod.rs:53 crates/leh-gtk/src/tray.rs:32
+#, no-c-format
+msgid "Running · {n} device"
+msgid_plural "Running · {n} devices"
+msgstr[0] ""
+msgstr[1] ""
+
+#: crates/easyhotspot/src/tray/mod.rs:59 crates/leh-gtk/src/tray.rs:34
+#, no-c-format
+msgid " · {n} waiting"
+msgid_plural " · {n} waiting"
+msgstr[0] ""
+msgstr[1] ""
+
+#: crates/easyhotspot/src/ui/clients.rs:32 crates/leh-gtk/src/pages/clients.rs:67
+msgid "no address yet"
+msgstr ""
+
+#: crates/easyhotspot/src/ui/clients.rs:33 crates/easyhotspot/src/ui/clients.rs:257 crates/easyhotspot/src/ui/device.rs:170 crates/leh-gtk/src/pages/clients.rs:69
+msgid "Unknown vendor"
+msgstr ""
+
+#: crates/easyhotspot/src/ui/clients.rs:72 crates/leh-gtk/src/pages/clients.rs:306
+msgid "Start the hotspot to see connected devices."
+msgstr ""
+
+#: crates/easyhotspot/src/ui/clients.rs:79 crates/leh-gtk/src/pages/clients.rs:313
+msgid "No devices yet"
+msgstr ""
+
+#: crates/easyhotspot/src/ui/clients.rs:80 crates/leh-gtk/src/pages/clients.rs:315
+msgid "Scan the QR code on Home to connect."
+msgstr ""
+
+#: crates/easyhotspot/src/ui/clients.rs:88 crates/leh-gtk/src/pages/clients.rs:95
+msgid "The hotspot is off. You can still change the settings of each device; they apply the next time it connects."
+msgstr ""
+
+#: crates/easyhotspot/src/ui/clients.rs:97 crates/leh-gtk/src/pages/clients.rs:106
+msgid "Speed right now"
+msgstr ""
+
+#: crates/easyhotspot/src/ui/clients.rs:98 crates/leh-gtk/src/pages/clients.rs:107
+msgid "All devices together"
+msgstr ""
+
+#: crates/easyhotspot/src/ui/clients.rs:108 crates/leh-gtk/src/pages/clients.rs:118
+msgid "Used since the hotspot started"
+msgstr ""
+
+#: crates/easyhotspot/src/ui/clients.rs:110 crates/leh-gtk/src/pages/clients.rs:335
+#, no-c-format
+msgid "Downloaded {down} · uploaded {up}"
+msgstr ""
+
+#: crates/easyhotspot/src/ui/clients.rs:160 crates/easyhotspot/src/ui/device.rs:206 crates/leh-gtk/src/pages/clients.rs:125 crates/leh-gtk/src/pages/device.rs:56
+msgid "Waiting for approval"
+msgstr ""
+
+#: crates/easyhotspot/src/ui/clients.rs:163 crates/leh-gtk/src/pages/clients.rs:410
+#, no-c-format
+msgid "Allowed · {n}"
+msgstr ""
+
+#: crates/easyhotspot/src/ui/clients.rs:170 crates/leh-gtk/src/pages/clients.rs:416
+msgid "No device is connected right now. Scan the QR code on Home to connect."
+msgstr ""
+
+#: crates/easyhotspot/src/ui/clients.rs:183 crates/leh-gtk/src/pages/clients.rs:431
+#, no-c-format
+msgid "Blocked · {n}"
+msgstr ""
+
+#: crates/easyhotspot/src/ui/clients.rs:189
+msgid "Blocking needs the Easy Hotspot helper. Until it's set up, these devices can still connect."
+msgstr ""
+
+#: crates/easyhotspot/src/ui/clients.rs:220 crates/leh-gtk/src/pages/clients.rs:206
+msgid "Cap reached"
+msgstr ""
+
+#: crates/easyhotspot/src/ui/clients.rs:294 crates/leh-gtk/src/pages/clients.rs:256
+msgid "Block"
+msgstr ""
+
+#: crates/easyhotspot/src/ui/clients.rs:300 crates/easyhotspot/src/ui/clients.rs:309 crates/leh-gtk/src/pages/clients.rs:262
+msgid "Allow"
+msgstr ""
+
+#: crates/easyhotspot/src/ui/clients.rs:173 crates/leh-gtk/src/pages/clients.rs:420
+#, no-c-format
+msgid "{n} connected now"
+msgid_plural "{n} connected now"
+msgstr[0] ""
+msgstr[1] ""
+
+#: crates/easyhotspot/src/ui/device.rs:122 crates/leh-gtk/src/pages/device.rs:179
+#, no-c-format
+msgid "This session: {used} of {cap}"
+msgstr ""
+
+#: crates/easyhotspot/src/ui/device.rs:130 crates/leh-gtk/src/pages/device.rs:187
+msgid " · cap reached"
+msgstr ""
+
+#: crates/easyhotspot/src/ui/device.rs:136 crates/leh-gtk/src/pages/device.rs:194
+#, no-c-format
+msgid "This session: {used}"
+msgstr ""
+
+#: crates/easyhotspot/src/ui/device.rs:174 crates/leh-gtk/src/pages/device.rs:233
+msgid "no address"
+msgstr ""
+
+#: crates/easyhotspot/src/ui/device.rs:189 crates/easyhotspot/src/ui/home.rs:128 crates/leh-gtk/src/pages/device.rs:48 crates/leh-gtk/src/pages/home.rs:107
+msgid "Name"
+msgstr ""
+
+#: crates/easyhotspot/src/ui/device.rs:193 crates/leh-gtk/src/pages/device.rs:51
+msgid "Address"
+msgstr ""
+
+#: crates/easyhotspot/src/ui/device.rs:200 crates/leh-gtk/src/pages/device.rs:55
+msgid "Access"
+msgstr ""
+
+#: crates/easyhotspot/src/ui/device.rs:205 crates/leh-gtk/src/pages/device.rs:56
+msgid "Allowed"
+msgstr ""
+
+#: crates/easyhotspot/src/ui/device.rs:207 crates/leh-gtk/src/pages/device.rs:56
+msgid "Blocked"
+msgstr ""
+
+#: crates/easyhotspot/src/ui/device.rs:221 crates/leh-gtk/src/pages/device.rs:46
+msgid "Device"
+msgstr ""
+
+#: crates/easyhotspot/src/ui/device.rs:229 crates/leh-gtk/src/pages/device.rs:64
+msgid "Use default settings"
+msgstr ""
+
+#: crates/easyhotspot/src/ui/device.rs:230 crates/leh-gtk/src/pages/device.rs:65
+msgid "Follow the settings for new devices"
+msgstr ""
+
+#: crates/easyhotspot/src/ui/device.rs:271 crates/leh-gtk/src/pages/device.rs:62
+msgid "Limits"
+msgstr ""
+
+#: crates/easyhotspot/src/ui/device.rs:285 crates/leh-gtk/src/pages/device.rs:73
+msgid "Forget this device"
+msgstr ""
+
+#: crates/easyhotspot/src/ui/device.rs:293 crates/leh-gtk/src/pages/device.rs:130
+msgid "Forget this device?"
+msgstr ""
+
+#: crates/easyhotspot/src/ui/device.rs:294 crates/leh-gtk/src/pages/device.rs:131
+msgid "Its name and limits are removed. If it connects again, it is treated as a new device."
+msgstr ""
+
+#: crates/easyhotspot/src/ui/device.rs:295 crates/leh-gtk/src/pages/device.rs:134
+msgid "Forget"
+msgstr ""
+
+#: crates/easyhotspot/src/ui/device.rs:297 crates/easyhotspot/src/ui/dialogs.rs:87 crates/leh-gtk/src/app.rs:196 crates/leh-gtk/src/pages/device.rs:133
+msgid "Cancel"
+msgstr ""
+
+#: crates/easyhotspot/src/ui/device.rs:313
+msgid "Back"
+msgstr ""
+
+#: crates/easyhotspot/src/ui/dialogs.rs:18 crates/leh-gtk/src/app.rs:392
+msgid "NetworkManager is required"
+msgstr ""
+
+#: crates/easyhotspot/src/ui/dialogs.rs:19
+msgid "Easy Hotspot creates hotspots through NetworkManager 1.30 or newer, which isn't running on this system."
+msgstr ""
+
+#: crates/easyhotspot/src/ui/dialogs.rs:22 crates/leh-gtk/src/app.rs:396
+msgid "Learn more"
+msgstr ""
+
+#: crates/easyhotspot/src/ui/dialogs.rs:26 crates/leh-gtk/src/app.rs:400
+msgid "Your Wi-Fi card can't create hotspots"
+msgstr ""
+
+#: crates/easyhotspot/src/ui/dialogs.rs:27 crates/leh-gtk/src/app.rs:401
+msgid "None of your Wi-Fi adapters support access-point mode. A USB Wi-Fi adapter that supports AP mode will work."
+msgstr ""
+
+#: crates/easyhotspot/src/ui/dialogs.rs:30 crates/easyhotspot/src/ui/dialogs.rs:51 crates/leh-gtk/src/app.rs:404
+msgid "Refresh"
+msgstr ""
+
+#: crates/easyhotspot/src/ui/dialogs.rs:34 crates/leh-gtk/src/app.rs:408
+msgid "Plug in an Ethernet cable"
+msgstr ""
+
+#: crates/easyhotspot/src/ui/dialogs.rs:35 crates/leh-gtk/src/app.rs:409
+msgid "Bridge mode connects your devices to a wired network. Connect a cable, or share your internet in Router mode instead."
+msgstr ""
+
+#: crates/easyhotspot/src/ui/dialogs.rs:38 crates/leh-gtk/src/app.rs:412
+msgid "Use Router mode"
+msgstr ""
+
+#: crates/easyhotspot/src/ui/dialogs.rs:42 crates/leh-gtk/src/app.rs:416
+msgid "Wi-Fi adapter unavailable"
+msgstr ""
+
+#: crates/easyhotspot/src/ui/dialogs.rs:43 crates/leh-gtk/src/app.rs:417
+msgid "The Wi-Fi adapter was turned off or unplugged."
+msgstr ""
+
+#: crates/easyhotspot/src/ui/dialogs.rs:44 crates/leh-gtk/src/app.rs:418
+msgid "Retry"
+msgstr ""
+
+#: crates/easyhotspot/src/ui/dialogs.rs:49
+msgid "Windows can't share a hotspot"
+msgstr ""
+
+#: crates/easyhotspot/src/ui/dialogs.rs:72 crates/leh-gtk/src/app.rs:335 crates/leh-gtk/src/app.rs:339
+msgid "Copy command"
+msgstr ""
+
+#: crates/easyhotspot/src/ui/dialogs.rs:82 crates/leh-gtk/src/app.rs:191
+msgid "Switch to Bridge mode?"
+msgstr ""
+
+#: crates/easyhotspot/src/ui/dialogs.rs:83 crates/leh-gtk/src/app.rs:192
+msgid "Devices will join your wired network and get addresses from your router. While the hotspot is on, this computer's wired connection moves into a bridge: it keeps the same address on your network, but drops for a few seconds when the hotspot starts and stops.\n\nTo share files with devices on the hotspot (for example with Warpinator), set those apps to use any network interface, or use Router mode, which never touches the wired connection."
+msgstr ""
+
+#: crates/easyhotspot/src/ui/dialogs.rs:86 crates/leh-gtk/src/app.rs:197
+msgid "Use Bridge mode"
+msgstr ""
+
+#: crates/easyhotspot/src/ui/dialogs.rs:107 crates/leh-gtk/src/app.rs:279 crates/leh-gtk/src/app.rs:309
+msgid "Update the helper"
+msgstr ""
+
+#: crates/easyhotspot/src/ui/dialogs.rs:109 crates/leh-gtk/src/app.rs:273 crates/leh-gtk/src/app.rs:311
 msgid "Install the helper"
+msgstr ""
+
+#: crates/easyhotspot/src/ui/dialogs.rs:112 crates/leh-gtk/src/app.rs:301
+msgid "The installed helper is older than this app and needs an update."
+msgstr ""
+
+#: crates/easyhotspot/src/ui/dialogs.rs:114 crates/leh-gtk/src/app.rs:303
+msgid "Speed limits, approval of new devices and data caps need a small helper that runs with administrator rights. Everything else works without it."
+msgstr ""
+
+#: crates/easyhotspot/src/ui/dialogs.rs:119 crates/leh-gtk/src/app.rs:350
+msgid "Or run this in a terminal:"
+msgstr ""
+
+#: crates/easyhotspot/src/ui/dialogs.rs:121 crates/leh-gtk/src/app.rs:352
+msgid "This app was started from a terminal that can't ask for administrator rights. Run this in a normal terminal:"
+msgstr ""
+
+#: crates/easyhotspot/src/ui/dialogs.rs:123 crates/leh-gtk/src/app.rs:354
+msgid "Run this in a terminal:"
+msgstr ""
+
+#: crates/easyhotspot/src/ui/dialogs.rs:137 crates/easyhotspot/src/ui/dialogs.rs:161 crates/easyhotspot/src/ui/dialogs.rs:210 crates/easyhotspot/src/ui/dialogs.rs:216
+msgid "Close"
+msgstr ""
+
+#: crates/easyhotspot/src/ui/dialogs.rs:140 crates/leh-gtk/src/app.rs:370
+msgid "Update now"
+msgstr ""
+
+#: crates/easyhotspot/src/ui/dialogs.rs:142 crates/leh-gtk/src/app.rs:372
+msgid "Install now"
+msgstr ""
+
+#: crates/easyhotspot/src/ui/dialogs.rs:149 crates/leh-gtk/src/app.rs:289 crates/leh-gtk/src/app.rs:380
+msgid "Check again"
+msgstr ""
+
+#: crates/easyhotspot/src/ui/dialogs.rs:160 crates/leh-gtk/src/app.rs:728
+msgid "Try again"
+msgstr ""
+
+#: crates/easyhotspot/src/ui/dialogs.rs:170 crates/leh-gtk/src/app.rs:513
+msgid "Restart to change the language"
+msgstr ""
+
+#: crates/easyhotspot/src/ui/dialogs.rs:171
+msgid "Easy Hotspot needs to restart to show the new language. A running hotspot keeps working."
+msgstr ""
+
+#: crates/easyhotspot/src/ui/dialogs.rs:174 crates/leh-gtk/src/app.rs:519
+msgid "Restart now"
+msgstr ""
+
+#: crates/easyhotspot/src/ui/dialogs.rs:175 crates/leh-gtk/src/app.rs:518
+msgid "Later"
+msgstr ""
+
+#: crates/easyhotspot/src/ui/dialogs.rs:184 crates/leh-gtk/src/app.rs:942
+msgid "Helper: installed"
+msgstr ""
+
+#: crates/easyhotspot/src/ui/dialogs.rs:186 crates/leh-gtk/src/app.rs:944
+msgid "Helper: installed, not authorized"
+msgstr ""
+
+#: crates/easyhotspot/src/ui/dialogs.rs:187 crates/leh-gtk/src/app.rs:945
+msgid "Helper: needs an update"
+msgstr ""
+
+#: crates/easyhotspot/src/ui/dialogs.rs:199
+msgid "Version"
+msgstr ""
+
+#: crates/easyhotspot/src/ui/dialogs.rs:201 crates/leh-gtk/src/app.rs:954
+msgid "The simplest way to share a Wi-Fi hotspot."
+msgstr ""
+
+#: crates/easyhotspot/src/ui/dialogs.rs:207
+msgid "Easy Hotspot contributors · GNU GPL v3 or later"
+msgstr ""
+
+#: crates/easyhotspot/src/ui/dialogs.rs:214 crates/leh-gtk/src/app.rs:893
+msgid "Couldn't install the helper"
+msgstr ""
+
+#: crates/easyhotspot/src/ui/dialogs.rs:240 crates/easyhotspot/src/ui/mod.rs:526 crates/leh-gtk/src/app.rs:454
+msgid "Keyboard Shortcuts"
+msgstr ""
+
+#: crates/easyhotspot/src/ui/dialogs.rs:244 crates/leh-gtk/src/app.rs:481 crates/leh-gtk/src/pages/home.rs:97
+msgid "Turn hotspot on or off"
+msgstr ""
+
+#: crates/easyhotspot/src/ui/dialogs.rs:245 crates/easyhotspot/src/ui/home.rs:105 crates/easyhotspot/src/ui/home.rs:304 crates/leh-gtk/src/app.rs:482
+msgid "Copy password"
+msgstr ""
+
+#: crates/easyhotspot/src/ui/dialogs.rs:246 crates/easyhotspot/src/ui/mod.rs:378 crates/leh-gtk/src/app.rs:483 crates/leh-gtk/src/app.rs:1002
+msgid "Settings"
+msgstr ""
+
+#: crates/easyhotspot/src/ui/home.rs:73 crates/leh-gtk/src/pages/home.rs:85 crates/leh-gtk/src/pages/home.rs:430
+msgid "OFF"
+msgstr ""
+
+#: crates/easyhotspot/src/ui/home.rs:113 crates/leh-gtk/src/pages/home.rs:121 crates/leh-gtk/src/pages/home.rs:124
+msgid "Generate a new password"
+msgstr ""
+
+#: crates/easyhotspot/src/ui/home.rs:135 crates/easyhotspot/src/ui/home.rs:274 crates/leh-gtk/src/pages/home.rs:109 crates/leh-gtk/src/pages/home.rs:247
+msgid "Password"
+msgstr ""
+
+#: crates/easyhotspot/src/ui/home.rs:154 crates/leh-gtk/src/pages/home.rs:129
+msgid "Mode"
+msgstr ""
+
+#: crates/easyhotspot/src/ui/home.rs:171 crates/leh-gtk/src/pages/home.rs:425
+msgid "Starting…"
+msgstr ""
+
+#: crates/easyhotspot/src/ui/home.rs:191 crates/leh-gtk/src/pages/home.rs:432
+msgid "Starting the hotspot…"
+msgstr ""
+
+#: crates/easyhotspot/src/ui/home.rs:197 crates/leh-gtk/src/pages/home.rs:184
+msgid "Network"
+msgstr ""
+
+#: crates/easyhotspot/src/ui/home.rs:262 crates/leh-gtk/src/pages/home.rs:449
+#, no-c-format
+msgid "Scan to join “{name}”"
+msgstr ""
+
+#: crates/easyhotspot/src/ui/home.rs:288 crates/leh-gtk/src/pages/home.rs:512
+msgid "Hide password"
+msgstr ""
+
+#: crates/easyhotspot/src/ui/home.rs:290 crates/leh-gtk/src/pages/home.rs:253 crates/leh-gtk/src/pages/home.rs:256 crates/leh-gtk/src/pages/home.rs:514
+msgid "Show password"
+msgstr ""
+
+#: crates/easyhotspot/src/ui/home.rs:358 crates/leh-gtk/src/pages/home.rs:470
+msgid "Nothing has happened yet"
+msgstr ""
+
+#: crates/easyhotspot/src/ui/home.rs:400 crates/leh-gtk/src/pages/home.rs:301
+msgid "Session activity"
+msgstr ""
+
+#: crates/easyhotspot/src/ui/home.rs:415 crates/easyhotspot/src/ui/settings.rs:76 crates/leh-gtk/src/pages/settings.rs:71
+msgid "Devices share this computer's internet"
+msgstr ""
+
+#: crates/easyhotspot/src/ui/home.rs:416 crates/easyhotspot/src/ui/settings.rs:83 crates/leh-gtk/src/pages/settings.rs:76
+msgid "Devices join your wired network directly"
+msgstr ""
+
+#: crates/easyhotspot/src/ui/home.rs:417 crates/easyhotspot/src/ui/settings.rs:93 crates/leh-gtk/src/pages/settings.rs:81
+msgid "Devices can reach each other, but not the internet"
+msgstr ""
+
+#: crates/easyhotspot/src/ui/mod.rs:288 crates/leh-gtk/src/app.rs:1028
+msgid "Main menu"
+msgstr ""
+
+#: crates/easyhotspot/src/ui/mod.rs:373 crates/leh-gtk/src/app.rs:998
+msgid "Home"
+msgstr ""
+
+#: crates/easyhotspot/src/ui/mod.rs:385 crates/leh-gtk/src/app.rs:1008
+msgid "Clients"
+msgstr ""
+
+#: crates/easyhotspot/src/ui/mod.rs:414
+msgid "Per-device speed limits need the Easy Hotspot helper"
+msgstr ""
+
+#: crates/easyhotspot/src/ui/mod.rs:415 crates/easyhotspot/src/ui/mod.rs:423 crates/leh-gtk/src/app.rs:1283 crates/leh-gtk/src/app.rs:1291
+msgid "Set up…"
+msgstr ""
+
+#: crates/easyhotspot/src/ui/mod.rs:418
+msgid "Allow Easy Hotspot to manage speed limits"
+msgstr ""
+
+#: crates/easyhotspot/src/ui/mod.rs:419 crates/leh-gtk/src/app.rs:1287
+msgid "Authorize"
+msgstr ""
+
+#: crates/easyhotspot/src/ui/mod.rs:422 crates/leh-gtk/src/app.rs:1290
+msgid "Update the helper to use per-device control"
+msgstr ""
+
+#: crates/easyhotspot/src/ui/mod.rs:438 crates/leh-gtk/src/app.rs:1037
+msgid "Details"
+msgstr ""
+
+#: crates/easyhotspot/src/ui/mod.rs:511 crates/leh-gtk/src/app.rs:451
+msgid "Demo scenarios"
+msgstr ""
+
+#: crates/easyhotspot/src/ui/mod.rs:530
+msgid "About Easy Hotspot"
+msgstr ""
+
+#: crates/easyhotspot/src/ui/settings.rs:50
+msgid "Per-device control"
+msgstr ""
+
+#: crates/easyhotspot/src/ui/settings.rs:52
+msgid "Speed limits, approval of new devices and data caps aren't available on Windows yet. Devices can still be renamed, and every device that connects is listed in Clients."
+msgstr ""
+
+#: crates/easyhotspot/src/ui/settings.rs:85 crates/easyhotspot/src/ui/settings.rs:100
+msgid "Not available with Windows' Mobile Hotspot"
+msgstr ""
+
+#: crates/easyhotspot/src/ui/settings.rs:95 crates/leh-gtk/src/pages/settings.rs:337
+#, no-c-format
+msgid "Needs NetworkManager 1.52 or newer (you have {version})"
+msgstr ""
+
+#: crates/easyhotspot/src/ui/settings.rs:135 crates/leh-gtk/src/pages/settings.rs:64
+msgid "Connection mode"
+msgstr ""
+
+#: crates/easyhotspot/src/ui/settings.rs:146 crates/leh-gtk/src/pages/settings.rs:353
+msgid "Automatic (prefers a USB adapter)"
+msgstr ""
+
+#: crates/easyhotspot/src/ui/settings.rs:160
+msgid "Wi-Fi adapter"
+msgstr ""
+
+#: crates/easyhotspot/src/ui/settings.rs:164 crates/leh-gtk/src/pages/settings.rs:362
+#, no-c-format
+msgid "{iface} (not connected)"
+msgstr ""
+
+#: crates/easyhotspot/src/ui/settings.rs:175 crates/leh-gtk/src/pages/settings.rs:379
+#, no-c-format
+msgid "Uses {adapter}"
+msgstr ""
+
+#: crates/easyhotspot/src/ui/settings.rs:188 crates/leh-gtk/src/pages/settings.rs:392
+msgid "No adapter can create hotspots"
+msgstr ""
+
+#: crates/easyhotspot/src/ui/settings.rs:194 crates/leh-gtk/src/pages/settings.rs:109
+msgid "Hotspot adapter"
+msgstr ""
+
+#: crates/easyhotspot/src/ui/settings.rs:226 crates/leh-gtk/src/pages/settings.rs:405
+msgid "Automatic (same as this computer)"
+msgstr ""
+
+#: crates/easyhotspot/src/ui/settings.rs:241 crates/leh-gtk/src/pages/settings.rs:431
+msgid "No wired connection selected"
+msgstr ""
+
+#: crates/easyhotspot/src/ui/settings.rs:243 crates/leh-gtk/src/pages/settings.rs:433
+#, no-c-format
+msgid "Same as this computer: {source}"
+msgstr ""
+
+#: crates/easyhotspot/src/ui/settings.rs:244 crates/leh-gtk/src/pages/settings.rs:434
+msgid "Same as this computer"
+msgstr ""
+
+#: crates/easyhotspot/src/ui/settings.rs:252 crates/leh-gtk/src/pages/settings.rs:424
+msgid "Wired network to bridge"
+msgstr ""
+
+#: crates/easyhotspot/src/ui/settings.rs:254 crates/leh-gtk/src/pages/settings.rs:110 crates/leh-gtk/src/pages/settings.rs:426
+msgid "Internet source"
+msgstr ""
+
+#: crates/easyhotspot/src/ui/settings.rs:271 crates/leh-gtk/src/pages/settings.rs:442
+msgid "No wired connection found. Plug in an Ethernet cable or USB tethering, or use Router mode."
+msgstr ""
+
+#: crates/easyhotspot/src/ui/settings.rs:273 crates/leh-gtk/src/pages/settings.rs:444
+msgid "Only wired connections can be bridged. To share Wi-Fi or mobile internet, use Router mode."
+msgstr ""
+
+#: crates/easyhotspot/src/ui/settings.rs:281 crates/leh-gtk/src/pages/settings.rs:448
+#, no-c-format
+msgid "Hotspot traffic currently goes through {source}. Sending only the hotspot through {name} needs the upcoming helper."
+msgstr ""
+
+#: crates/easyhotspot/src/ui/settings.rs:301 crates/leh-gtk/src/pages/settings.rs:108
+msgid "Adapters"
+msgstr ""
+
+#: crates/easyhotspot/src/ui/settings.rs:312 crates/leh-gtk/src/pages/settings.rs:156
+msgid "Band"
+msgstr ""
+
+#: crates/easyhotspot/src/ui/settings.rs:314 crates/leh-gtk/src/pages/settings.rs:466
+msgid "This adapter only supports 2.4 GHz"
+msgstr ""
+
+#: crates/easyhotspot/src/ui/settings.rs:318 crates/easyhotspot/src/ui/settings.rs:332 crates/leh-gtk/src/pages/settings.rs:53 crates/leh-gtk/src/pages/settings.rs:156
+msgid "Automatic"
+msgstr ""
+
+#: crates/easyhotspot/src/ui/settings.rs:349 crates/leh-gtk/src/pages/settings.rs:157
+msgid "Channel"
+msgstr ""
+
+#: crates/easyhotspot/src/ui/settings.rs:369 crates/leh-gtk/src/pages/settings.rs:159
+msgid "Hidden network"
+msgstr ""
+
+#: crates/easyhotspot/src/ui/settings.rs:370 crates/leh-gtk/src/pages/settings.rs:160
+msgid "Devices must type the name to join"
+msgstr ""
+
+#: crates/easyhotspot/src/ui/settings.rs:377 crates/leh-gtk/src/pages/settings.rs:155
+msgid "Radio"
+msgstr ""
+
+#: crates/easyhotspot/src/ui/settings.rs:389 crates/leh-gtk/src/pages/settings.rs:198
+msgid "Total download speed"
+msgstr ""
+
+#: crates/easyhotspot/src/ui/settings.rs:391 crates/leh-gtk/src/pages/settings.rs:205
+msgid "Total upload speed"
+msgstr ""
+
+#: crates/easyhotspot/src/ui/settings.rs:413 crates/leh-gtk/src/pages/settings.rs:194
+msgid "Connection speed"
+msgstr ""
+
+#: crates/easyhotspot/src/ui/settings.rs:416 crates/leh-gtk/src/pages/settings.rs:195 crates/leh-gtk/src/pages/settings.rs:509
+msgid "Limits for the whole hotspot. Set them to your real connection speed for priorities to work well."
+msgstr ""
+
+#: crates/easyhotspot/src/ui/settings.rs:418
+msgid "Needs the Easy Hotspot helper."
+msgstr ""
+
+#: crates/easyhotspot/src/ui/settings.rs:433 crates/leh-gtk/src/pages/settings.rs:226
+msgid "Ask before letting devices join"
+msgstr ""
+
+#: crates/easyhotspot/src/ui/settings.rs:434 crates/leh-gtk/src/pages/settings.rs:227
+msgid "New devices wait until you allow them"
+msgstr ""
+
+#: crates/easyhotspot/src/ui/settings.rs:472 crates/leh-gtk/src/pages/settings.rs:215
+msgid "New devices"
+msgstr ""
+
+#: crates/easyhotspot/src/ui/settings.rs:473 crates/leh-gtk/src/pages/settings.rs:216
+msgid "Applied automatically the first time a device connects."
+msgstr ""
+
+#: crates/easyhotspot/src/ui/settings.rs:478 crates/leh-gtk/src/pages/settings.rs:220
+msgid "Needs helper"
+msgstr ""
+
+#: crates/easyhotspot/src/ui/settings.rs:489 crates/leh-gtk/src/pages/settings.rs:244
+msgid "Launch at login"
+msgstr ""
+
+#: crates/easyhotspot/src/ui/settings.rs:490 crates/leh-gtk/src/pages/settings.rs:245
+msgid "Open in the background when you log in"
+msgstr ""
+
+#: crates/easyhotspot/src/ui/settings.rs:502 crates/leh-gtk/src/pages/settings.rs:248
+msgid "Start hotspot at login"
+msgstr ""
+
+#: crates/easyhotspot/src/ui/settings.rs:503 crates/leh-gtk/src/pages/settings.rs:249
+msgid "Start sharing as soon as you log in"
+msgstr ""
+
+#: crates/easyhotspot/src/ui/settings.rs:515 crates/leh-gtk/src/pages/settings.rs:252
+msgid "Show in system tray"
+msgstr ""
+
+#: crates/easyhotspot/src/ui/settings.rs:518 crates/leh-gtk/src/pages/settings.rs:253 crates/leh-gtk/src/pages/settings.rs:524
+msgid "Closing the window keeps the app running in the tray"
+msgstr ""
+
+#: crates/easyhotspot/src/ui/settings.rs:520 crates/leh-gtk/src/pages/settings.rs:526
+msgid "Your desktop doesn't show a system tray"
+msgstr ""
+
+#: crates/easyhotspot/src/ui/settings.rs:529 crates/leh-gtk/src/pages/settings.rs:242
+msgid "Startup"
+msgstr ""
+
+#: crates/easyhotspot/src/ui/settings.rs:541 crates/leh-gtk/src/pages/settings.rs:274
+msgid "Language"
+msgstr ""
+
+#: crates/easyhotspot/src/ui/settings.rs:542 crates/leh-gtk/src/pages/settings.rs:275
+msgid "Takes effect after restarting the app"
+msgstr ""
+
+#: crates/easyhotspot/src/ui/settings.rs:545 crates/leh-gtk/src/pages/settings.rs:274
+msgid "System"
+msgstr ""
+
+#: crates/easyhotspot/src/ui/settings.rs:561 crates/leh-gtk/src/pages/settings.rs:290
+msgid "Export diagnostics…"
+msgstr ""
+
+#: crates/easyhotspot/src/ui/settings.rs:562 crates/leh-gtk/src/pages/settings.rs:291
+msgid "Save a report to attach to bug reports (passwords removed)"
+msgstr ""
+
+#: crates/easyhotspot/src/ui/settings.rs:571 crates/leh-gtk/src/pages/settings.rs:288
+msgid "Troubleshooting"
+msgstr ""
+
+#: crates/easyhotspot/src/ui/settings.rs:616 crates/leh-gtk/src/widgets.rs:290
+msgid "Download limit"
+msgstr ""
+
+#: crates/easyhotspot/src/ui/settings.rs:617 crates/leh-gtk/src/widgets.rs:296
+msgid "Upload limit"
+msgstr ""
+
+#: crates/easyhotspot/src/ui/settings.rs:619 crates/leh-gtk/src/widgets.rs:306
+msgid "Priority"
+msgstr ""
+
+#: crates/easyhotspot/src/ui/settings.rs:620 crates/leh-gtk/src/widgets.rs:307
+msgid "Who gets bandwidth first when the link is busy"
+msgstr ""
+
+#: crates/easyhotspot/src/ui/settings.rs:623 crates/leh-gtk/src/widgets.rs:306
+msgid "High"
+msgstr ""
+
+#: crates/easyhotspot/src/ui/settings.rs:623 crates/leh-gtk/src/widgets.rs:306
+msgid "Low"
+msgstr ""
+
+#: crates/easyhotspot/src/ui/settings.rs:631 crates/leh-gtk/src/widgets.rs:301
+msgid "Data cap per session"
+msgstr ""
+
+#: crates/easyhotspot/src/ui/settings.rs:633 crates/leh-gtk/src/widgets.rs:309
+msgid "When the cap is reached"
+msgstr ""
+
+#: crates/easyhotspot/src/ui/settings.rs:638 crates/leh-gtk/src/widgets.rs:311
+msgid "Block the device"
+msgstr ""
+
+#: crates/easyhotspot/src/ui/settings.rs:639 crates/leh-gtk/src/widgets.rs:312
+msgid "Slow to 256 kbps"
+msgstr ""
+
+#: crates/easyhotspot/src/ui/settings.rs:640 crates/leh-gtk/src/widgets.rs:313
+msgid "Slow to 1 Mbps"
+msgstr ""
+
+#: crates/easyhotspot/src/ui/widgets.rs:178 crates/leh-gtk/src/widgets.rs:303
+msgid "No cap"
+msgstr ""
+
+#: crates/easyhotspot/src/ui/widgets.rs:248 crates/leh-gtk/src/widgets.rs:203
+msgid "type a number"
+msgstr ""
+
+#: crates/easyhotspot/src/ui/widgets.rs:249 crates/leh-gtk/src/widgets.rs:204
+msgid "too small"
+msgstr ""
+
+#: crates/easyhotspot/src/ui/widgets.rs:250 crates/leh-gtk/src/widgets.rs:205
+msgid "too large"
+msgstr ""
+
+#: crates/leh-gtk/src/activity.rs:303
+msgid "Speed limits paused: Linux Easy Hotspot needs your authorization"
 msgstr ""
 
 #: crates/leh-gtk/src/app.rs:274
 msgid "Per-device speed limits, approval and data caps need a small helper that runs with administrator rights.\n\nOn Linux Mint, run:\n\nsudo apt install linuxeasyhotspot"
-msgstr ""
-
-#: crates/leh-gtk/src/app.rs:279 crates/leh-gtk/src/app.rs:309
-msgid "Update the helper"
 msgstr ""
 
 #: crates/leh-gtk/src/app.rs:280
@@ -152,100 +1271,8 @@ msgstr ""
 msgid "Per-device control is available."
 msgstr ""
 
-#: crates/leh-gtk/src/app.rs:288 crates/leh-gtk/src/app.rs:365 crates/leh-gtk/src/app.rs:727 crates/leh-gtk/src/app.rs:894
-msgid "Close"
-msgstr ""
-
-#: crates/leh-gtk/src/app.rs:289 crates/leh-gtk/src/app.rs:380
-msgid "Check again"
-msgstr ""
-
-#: crates/leh-gtk/src/app.rs:301
-msgid "The installed helper is older than this app and needs an update."
-msgstr ""
-
-#: crates/leh-gtk/src/app.rs:303
-msgid "Speed limits, approval of new devices and data caps need a small helper that runs with administrator rights. Everything else works without it."
-msgstr ""
-
-#: crates/leh-gtk/src/app.rs:335 crates/leh-gtk/src/app.rs:339
-msgid "Copy command"
-msgstr ""
-
-#: crates/leh-gtk/src/app.rs:350
-msgid "Or run this in a terminal:"
-msgstr ""
-
-#: crates/leh-gtk/src/app.rs:352
-msgid "This app was started from a terminal that can't ask for administrator rights. Run this in a normal terminal:"
-msgstr ""
-
-#: crates/leh-gtk/src/app.rs:354
-msgid "Run this in a terminal:"
-msgstr ""
-
-#: crates/leh-gtk/src/app.rs:370
-msgid "Update now"
-msgstr ""
-
-#: crates/leh-gtk/src/app.rs:372
-msgid "Install now"
-msgstr ""
-
-#: crates/leh-gtk/src/app.rs:392
-msgid "NetworkManager is required"
-msgstr ""
-
 #: crates/leh-gtk/src/app.rs:393
 msgid "Linux Easy Hotspot creates hotspots through NetworkManager 1.30 or newer, which isn't running on this system."
-msgstr ""
-
-#: crates/leh-gtk/src/app.rs:396
-msgid "Learn more"
-msgstr ""
-
-#: crates/leh-gtk/src/app.rs:400
-msgid "Your Wi-Fi card can't create hotspots"
-msgstr ""
-
-#: crates/leh-gtk/src/app.rs:401
-msgid "None of your Wi-Fi adapters support access-point mode. A USB Wi-Fi adapter that supports AP mode will work."
-msgstr ""
-
-#: crates/leh-gtk/src/app.rs:404
-msgid "Refresh"
-msgstr ""
-
-#: crates/leh-gtk/src/app.rs:408
-msgid "Plug in an Ethernet cable"
-msgstr ""
-
-#: crates/leh-gtk/src/app.rs:409
-msgid "Bridge mode connects your devices to a wired network. Connect a cable, or share your internet in Router mode instead."
-msgstr ""
-
-#: crates/leh-gtk/src/app.rs:412
-msgid "Use Router mode"
-msgstr ""
-
-#: crates/leh-gtk/src/app.rs:416
-msgid "Wi-Fi adapter unavailable"
-msgstr ""
-
-#: crates/leh-gtk/src/app.rs:417
-msgid "The Wi-Fi adapter was turned off or unplugged."
-msgstr ""
-
-#: crates/leh-gtk/src/app.rs:418
-msgid "Retry"
-msgstr ""
-
-#: crates/leh-gtk/src/app.rs:451
-msgid "Demo scenarios"
-msgstr ""
-
-#: crates/leh-gtk/src/app.rs:454
-msgid "Keyboard Shortcuts"
 msgstr ""
 
 #: crates/leh-gtk/src/app.rs:455
@@ -256,385 +1283,24 @@ msgstr ""
 msgid "General"
 msgstr ""
 
-#: crates/leh-gtk/src/app.rs:481 crates/leh-gtk/src/pages/home.rs:94
-msgid "Turn hotspot on or off"
-msgstr ""
-
-#: crates/leh-gtk/src/app.rs:482 crates/leh-gtk/src/pages/home.rs:111 crates/leh-gtk/src/pages/home.rs:114 crates/leh-gtk/src/pages/home.rs:261
-msgid "Copy password"
-msgstr ""
-
-#: crates/leh-gtk/src/app.rs:483 crates/leh-gtk/src/app.rs:1002
-msgid "Settings"
-msgstr ""
-
-#: crates/leh-gtk/src/app.rs:484 crates/leh-gtk/src/tray.rs:144
-msgid "Quit"
-msgstr ""
-
-#: crates/leh-gtk/src/app.rs:513
-msgid "Restart to change the language"
-msgstr ""
-
 #: crates/leh-gtk/src/app.rs:514
 msgid "Linux Easy Hotspot needs to restart to show the new language. A running hotspot keeps working."
-msgstr ""
-
-#: crates/leh-gtk/src/app.rs:518
-msgid "Later"
-msgstr ""
-
-#: crates/leh-gtk/src/app.rs:519
-msgid "Restart now"
-msgstr ""
-
-#: crates/leh-gtk/src/app.rs:552 crates/leh-gtk/src/live.rs:144
-msgid "Couldn't start the hotspot"
-msgstr ""
-
-#: crates/leh-gtk/src/app.rs:561
-msgid "Hotspot stopped"
-msgstr ""
-
-#: crates/leh-gtk/src/app.rs:567
-msgid "New password generated"
-msgstr ""
-
-#: crates/leh-gtk/src/app.rs:572
-msgid "Password copied"
-msgstr ""
-
-#: crates/leh-gtk/src/app.rs:580
-#, no-c-format
-msgid "Local only needs NetworkManager 1.52 or newer (you have {version})"
-msgstr ""
-
-#: crates/leh-gtk/src/app.rs:616
-msgid "This adapter doesn't support 5 GHz"
-msgstr ""
-
-#: crates/leh-gtk/src/app.rs:649
-msgid "Diagnostics export is coming in a later version"
-msgstr ""
-
-#: crates/leh-gtk/src/app.rs:652
-msgid "Demo: diagnostics would be saved to a .txt file"
-msgstr ""
-
-#: crates/leh-gtk/src/app.rs:656
-msgid "Device allowed"
-msgstr ""
-
-#: crates/leh-gtk/src/app.rs:660
-msgid "Device blocked"
-msgstr ""
-
-#: crates/leh-gtk/src/app.rs:699
-msgid "Device forgotten"
-msgstr ""
-
-#: crates/leh-gtk/src/app.rs:711
-msgid "Demo: the system would ask for your password here"
-msgstr ""
-
-#: crates/leh-gtk/src/app.rs:722
-msgid "Helper found — per-device control enabled"
-msgstr ""
-
-#: crates/leh-gtk/src/app.rs:728
-msgid "Try again"
-msgstr ""
-
-#: crates/leh-gtk/src/app.rs:809
-#, no-c-format
-msgid "USB Wi-Fi adapter found ({iface}). It will be used the next time the hotspot starts"
-msgstr ""
-
-#: crates/leh-gtk/src/app.rs:814
-#, no-c-format
-msgid "USB Wi-Fi adapter found ({iface})"
-msgstr ""
-
-#: crates/leh-gtk/src/app.rs:818
-#, no-c-format
-msgid "USB Wi-Fi adapter found ({iface}). Choose it in Settings → Hotspot adapter"
-msgstr ""
-
-#: crates/leh-gtk/src/app.rs:829
-msgid "A Wi-Fi adapter can't be used — see Settings"
-msgstr ""
-
-#: crates/leh-gtk/src/app.rs:884
-msgid "Helper installed"
-msgstr ""
-
-#: crates/leh-gtk/src/app.rs:890
-msgid "Installation cancelled"
-msgstr ""
-
-#: crates/leh-gtk/src/app.rs:893
-msgid "Couldn't install the helper"
-msgstr ""
-
-#: crates/leh-gtk/src/app.rs:899
-msgid "Copied to the clipboard"
-msgstr ""
-
-#: crates/leh-gtk/src/app.rs:905
-msgid "Helper found: per-device control is on"
-msgstr ""
-
-#: crates/leh-gtk/src/app.rs:942
-msgid "Helper: installed"
-msgstr ""
-
-#: crates/leh-gtk/src/app.rs:943 crates/leh-gtk/src/state.rs:583
-msgid "Helper: not installed"
-msgstr ""
-
-#: crates/leh-gtk/src/app.rs:944
-msgid "Helper: installed, not authorized"
-msgstr ""
-
-#: crates/leh-gtk/src/app.rs:945
-msgid "Helper: needs an update"
 msgstr ""
 
 #: crates/leh-gtk/src/app.rs:950
 msgid "Linux Easy Hotspot contributors"
 msgstr ""
 
-#: crates/leh-gtk/src/app.rs:954
-msgid "The simplest way to share a Wi-Fi hotspot."
-msgstr ""
-
-#: crates/leh-gtk/src/app.rs:998
-msgid "Home"
-msgstr ""
-
-#: crates/leh-gtk/src/app.rs:1008
-msgid "Clients"
-msgstr ""
-
-#: crates/leh-gtk/src/app.rs:1028
-msgid "Main menu"
-msgstr ""
-
-#: crates/leh-gtk/src/app.rs:1037
-msgid "Details"
-msgstr ""
-
 #: crates/leh-gtk/src/app.rs:1282
 msgid "Per-device speed limits need the Linux Easy Hotspot helper"
-msgstr ""
-
-#: crates/leh-gtk/src/app.rs:1283 crates/leh-gtk/src/app.rs:1291
-msgid "Set up…"
 msgstr ""
 
 #: crates/leh-gtk/src/app.rs:1286
 msgid "Allow Linux Easy Hotspot to manage speed limits"
 msgstr ""
 
-#: crates/leh-gtk/src/app.rs:1287
-msgid "Authorize"
-msgstr ""
-
-#: crates/leh-gtk/src/app.rs:1290
-msgid "Update the helper to use per-device control"
-msgstr ""
-
-#: crates/leh-gtk/src/live.rs:150
-msgid "NetworkManager reported an error"
-msgstr ""
-
-#: crates/leh-gtk/src/live.rs:591
-#, no-c-format
-msgid "Couldn't apply speed limits: {error}"
-msgstr ""
-
-#: crates/leh-gtk/src/live.rs:771
-msgid "the source folder isn't available"
-msgstr ""
-
-#: crates/leh-gtk/src/live.rs:772
-msgid "cargo wasn't found"
-msgstr ""
-
-#: crates/leh-gtk/src/live.rs:773
-msgid "Building the helper…"
-msgstr ""
-
-#: crates/leh-gtk/src/live.rs:786
-msgid "build failed"
-msgstr ""
-
-#: crates/leh-gtk/src/live.rs:790
-msgid "Waiting for your password…"
-msgstr ""
-
-#: crates/leh-gtk/src/live.rs:808
-msgid "install failed"
-msgstr ""
-
-#: crates/leh-gtk/src/pages/clients.rs:67
-msgid "no address yet"
-msgstr ""
-
-#: crates/leh-gtk/src/pages/clients.rs:69 crates/leh-gtk/src/pages/clients.rs:73 crates/leh-gtk/src/pages/clients.rs:224 crates/leh-gtk/src/pages/device.rs:229
-msgid "Unknown vendor"
-msgstr ""
-
-#: crates/leh-gtk/src/pages/clients.rs:95
-msgid "The hotspot is off. You can still change the settings of each device; they apply the next time it connects."
-msgstr ""
-
-#: crates/leh-gtk/src/pages/clients.rs:106
-msgid "Speed right now"
-msgstr ""
-
-#: crates/leh-gtk/src/pages/clients.rs:107
-msgid "All devices together"
-msgstr ""
-
-#: crates/leh-gtk/src/pages/clients.rs:118
-msgid "Used since the hotspot started"
-msgstr ""
-
-#: crates/leh-gtk/src/pages/clients.rs:125 crates/leh-gtk/src/pages/device.rs:56
-msgid "Waiting for approval"
-msgstr ""
-
-#: crates/leh-gtk/src/pages/clients.rs:206
-msgid "Cap reached"
-msgstr ""
-
-#: crates/leh-gtk/src/pages/clients.rs:256
-msgid "Block"
-msgstr ""
-
-#: crates/leh-gtk/src/pages/clients.rs:262
-msgid "Allow"
-msgstr ""
-
-#: crates/leh-gtk/src/pages/clients.rs:304 crates/leh-gtk/src/pages/home.rs:100 crates/leh-gtk/src/pages/home.rs:425 crates/leh-gtk/src/tray.rs:42
-msgid "Hotspot is off"
-msgstr ""
-
-#: crates/leh-gtk/src/pages/clients.rs:306
-msgid "Start the hotspot to see connected devices."
-msgstr ""
-
-#: crates/leh-gtk/src/pages/clients.rs:313
-msgid "No devices yet"
-msgstr ""
-
-#: crates/leh-gtk/src/pages/clients.rs:315
-msgid "Scan the QR code on Home to connect."
-msgstr ""
-
-#: crates/leh-gtk/src/pages/clients.rs:335
-#, no-c-format
-msgid "Downloaded {down} · uploaded {up}"
-msgstr ""
-
-#: crates/leh-gtk/src/pages/clients.rs:410
-#, no-c-format
-msgid "Allowed · {n}"
-msgstr ""
-
-#: crates/leh-gtk/src/pages/clients.rs:416
-msgid "No device is connected right now. Scan the QR code on Home to connect."
-msgstr ""
-
-#: crates/leh-gtk/src/pages/clients.rs:431
-#, no-c-format
-msgid "Blocked · {n}"
-msgstr ""
-
 #: crates/leh-gtk/src/pages/clients.rs:435
 msgid "Blocking needs the Linux Easy Hotspot helper. Until it's set up, these devices can still connect."
-msgstr ""
-
-#: crates/leh-gtk/src/pages/clients.rs:420
-#, no-c-format
-msgid "{n} connected now"
-msgid_plural "{n} connected now"
-msgstr[0] ""
-msgstr[1] ""
-
-#: crates/leh-gtk/src/pages/device.rs:46
-msgid "Device"
-msgstr ""
-
-#: crates/leh-gtk/src/pages/device.rs:48 crates/leh-gtk/src/pages/home.rs:104
-msgid "Name"
-msgstr ""
-
-#: crates/leh-gtk/src/pages/device.rs:51
-msgid "Address"
-msgstr ""
-
-#: crates/leh-gtk/src/pages/device.rs:55
-msgid "Access"
-msgstr ""
-
-#: crates/leh-gtk/src/pages/device.rs:56
-msgid "Allowed"
-msgstr ""
-
-#: crates/leh-gtk/src/pages/device.rs:56
-msgid "Blocked"
-msgstr ""
-
-#: crates/leh-gtk/src/pages/device.rs:62
-msgid "Limits"
-msgstr ""
-
-#: crates/leh-gtk/src/pages/device.rs:64
-msgid "Use default settings"
-msgstr ""
-
-#: crates/leh-gtk/src/pages/device.rs:65
-msgid "Follow the settings for new devices"
-msgstr ""
-
-#: crates/leh-gtk/src/pages/device.rs:73
-msgid "Forget this device"
-msgstr ""
-
-#: crates/leh-gtk/src/pages/device.rs:130
-msgid "Forget this device?"
-msgstr ""
-
-#: crates/leh-gtk/src/pages/device.rs:131
-msgid "Its name and limits are removed. If it connects again, it is treated as a new device."
-msgstr ""
-
-#: crates/leh-gtk/src/pages/device.rs:134
-msgid "Forget"
-msgstr ""
-
-#: crates/leh-gtk/src/pages/device.rs:179
-#, no-c-format
-msgid "This session: {used} of {cap}"
-msgstr ""
-
-#: crates/leh-gtk/src/pages/device.rs:187
-msgid " · cap reached"
-msgstr ""
-
-#: crates/leh-gtk/src/pages/device.rs:194
-#, no-c-format
-msgid "This session: {used}"
-msgstr ""
-
-#: crates/leh-gtk/src/pages/device.rs:203 crates/leh-gtk/src/state.rs:475
-msgid "Not connected"
-msgstr ""
-
-#: crates/leh-gtk/src/pages/device.rs:233
-msgid "no address"
 msgstr ""
 
 #: crates/leh-gtk/src/pages/home.rs:19
@@ -649,538 +1315,21 @@ msgstr ""
 msgid "Local only: devices can reach each other and this computer, but not the internet"
 msgstr ""
 
-#: crates/leh-gtk/src/pages/home.rs:82 crates/leh-gtk/src/pages/home.rs:421
-msgid "OFF"
-msgstr ""
-
-#: crates/leh-gtk/src/pages/home.rs:92
+#: crates/leh-gtk/src/pages/home.rs:95
 msgid "Start hotspot (Ctrl+Space)"
 msgstr ""
 
-#: crates/leh-gtk/src/pages/home.rs:106 crates/leh-gtk/src/pages/home.rs:244
-msgid "Password"
-msgstr ""
-
-#: crates/leh-gtk/src/pages/home.rs:118 crates/leh-gtk/src/pages/home.rs:121
-msgid "Generate a new password"
-msgstr ""
-
-#: crates/leh-gtk/src/pages/home.rs:126
-msgid "Mode"
-msgstr ""
-
-#: crates/leh-gtk/src/pages/home.rs:181
-msgid "Network"
-msgstr ""
-
-#: crates/leh-gtk/src/pages/home.rs:186 crates/leh-gtk/src/pages/home.rs:418 crates/leh-gtk/src/tray.rs:125
-msgid "Start hotspot"
-msgstr ""
-
-#: crates/leh-gtk/src/pages/home.rs:217
+#: crates/leh-gtk/src/pages/home.rs:220
 msgid "Show connected devices"
 msgstr ""
 
-#: crates/leh-gtk/src/pages/home.rs:229
+#: crates/leh-gtk/src/pages/home.rs:232
 msgid "QR code to join the hotspot"
-msgstr ""
-
-#: crates/leh-gtk/src/pages/home.rs:250 crates/leh-gtk/src/pages/home.rs:253 crates/leh-gtk/src/pages/home.rs:505
-msgid "Show password"
-msgstr ""
-
-#: crates/leh-gtk/src/pages/home.rs:273 crates/leh-gtk/src/tray.rs:123
-msgid "Stop hotspot"
-msgstr ""
-
-#: crates/leh-gtk/src/pages/home.rs:297
-msgid "Session activity"
-msgstr ""
-
-#: crates/leh-gtk/src/pages/home.rs:416
-msgid "Starting…"
-msgstr ""
-
-#: crates/leh-gtk/src/pages/home.rs:423
-msgid "Starting the hotspot…"
-msgstr ""
-
-#: crates/leh-gtk/src/pages/home.rs:440
-#, no-c-format
-msgid "Scan to join “{name}”"
-msgstr ""
-
-#: crates/leh-gtk/src/pages/home.rs:461
-msgid "Nothing has happened yet"
-msgstr ""
-
-#: crates/leh-gtk/src/pages/home.rs:503
-msgid "Hide password"
-msgstr ""
-
-#: crates/leh-gtk/src/pages/settings.rs:53 crates/leh-gtk/src/pages/settings.rs:156 crates/leh-gtk/src/pages/settings.rs:157
-msgid "Automatic"
-msgstr ""
-
-#: crates/leh-gtk/src/pages/settings.rs:64
-msgid "Connection mode"
-msgstr ""
-
-#: crates/leh-gtk/src/pages/settings.rs:71
-msgid "Devices share this computer's internet"
-msgstr ""
-
-#: crates/leh-gtk/src/pages/settings.rs:76
-msgid "Devices join your wired network directly"
-msgstr ""
-
-#: crates/leh-gtk/src/pages/settings.rs:81
-msgid "Devices can reach each other, but not the internet"
-msgstr ""
-
-#: crates/leh-gtk/src/pages/settings.rs:108
-msgid "Adapters"
-msgstr ""
-
-#: crates/leh-gtk/src/pages/settings.rs:109
-msgid "Hotspot adapter"
-msgstr ""
-
-#: crates/leh-gtk/src/pages/settings.rs:110 crates/leh-gtk/src/pages/settings.rs:426
-msgid "Internet source"
-msgstr ""
-
-#: crates/leh-gtk/src/pages/settings.rs:155
-msgid "Radio"
-msgstr ""
-
-#: crates/leh-gtk/src/pages/settings.rs:156
-msgid "Band"
-msgstr ""
-
-#: crates/leh-gtk/src/pages/settings.rs:156 crates/leh-gtk/src/state.rs:425 crates/leh-gtk/src/state.rs:426
-msgid "2.4 GHz"
-msgstr ""
-
-#: crates/leh-gtk/src/pages/settings.rs:156 crates/leh-gtk/src/state.rs:423 crates/leh-gtk/src/state.rs:424
-msgid "5 GHz"
-msgstr ""
-
-#: crates/leh-gtk/src/pages/settings.rs:157
-msgid "Channel"
-msgstr ""
-
-#: crates/leh-gtk/src/pages/settings.rs:159
-msgid "Hidden network"
-msgstr ""
-
-#: crates/leh-gtk/src/pages/settings.rs:160
-msgid "Devices must type the name to join"
-msgstr ""
-
-#: crates/leh-gtk/src/pages/settings.rs:194
-msgid "Connection speed"
-msgstr ""
-
-#: crates/leh-gtk/src/pages/settings.rs:195 crates/leh-gtk/src/pages/settings.rs:509
-msgid "Limits for the whole hotspot. Set them to your real connection speed for priorities to work well."
-msgstr ""
-
-#: crates/leh-gtk/src/pages/settings.rs:198
-msgid "Total download speed"
-msgstr ""
-
-#: crates/leh-gtk/src/pages/settings.rs:200 crates/leh-gtk/src/pages/settings.rs:207 crates/leh-gtk/src/state.rs:450 crates/leh-gtk/src/state.rs:519
-msgid "Unlimited"
-msgstr ""
-
-#: crates/leh-gtk/src/pages/settings.rs:205
-msgid "Total upload speed"
-msgstr ""
-
-#: crates/leh-gtk/src/pages/settings.rs:215
-msgid "New devices"
-msgstr ""
-
-#: crates/leh-gtk/src/pages/settings.rs:216
-msgid "Applied automatically the first time a device connects."
-msgstr ""
-
-#: crates/leh-gtk/src/pages/settings.rs:220
-msgid "Needs helper"
-msgstr ""
-
-#: crates/leh-gtk/src/pages/settings.rs:226
-msgid "Ask before letting devices join"
-msgstr ""
-
-#: crates/leh-gtk/src/pages/settings.rs:227
-msgid "New devices wait until you allow them"
-msgstr ""
-
-#: crates/leh-gtk/src/pages/settings.rs:242
-msgid "Startup"
-msgstr ""
-
-#: crates/leh-gtk/src/pages/settings.rs:244
-msgid "Launch at login"
-msgstr ""
-
-#: crates/leh-gtk/src/pages/settings.rs:245
-msgid "Open in the background when you log in"
-msgstr ""
-
-#: crates/leh-gtk/src/pages/settings.rs:248
-msgid "Start hotspot at login"
-msgstr ""
-
-#: crates/leh-gtk/src/pages/settings.rs:249
-msgid "Start sharing as soon as you log in"
-msgstr ""
-
-#: crates/leh-gtk/src/pages/settings.rs:252
-msgid "Show in system tray"
-msgstr ""
-
-#: crates/leh-gtk/src/pages/settings.rs:253 crates/leh-gtk/src/pages/settings.rs:524
-msgid "Closing the window keeps the app running in the tray"
-msgstr ""
-
-#: crates/leh-gtk/src/pages/settings.rs:274
-msgid "Language"
-msgstr ""
-
-#: crates/leh-gtk/src/pages/settings.rs:274
-msgid "System"
-msgstr ""
-
-#: crates/leh-gtk/src/pages/settings.rs:275
-msgid "Takes effect after restarting the app"
-msgstr ""
-
-#: crates/leh-gtk/src/pages/settings.rs:288
-msgid "Troubleshooting"
-msgstr ""
-
-#: crates/leh-gtk/src/pages/settings.rs:290
-msgid "Export diagnostics…"
-msgstr ""
-
-#: crates/leh-gtk/src/pages/settings.rs:291
-msgid "Save a report to attach to bug reports (passwords removed)"
-msgstr ""
-
-#: crates/leh-gtk/src/pages/settings.rs:337
-#, no-c-format
-msgid "Needs NetworkManager 1.52 or newer (you have {version})"
-msgstr ""
-
-#: crates/leh-gtk/src/pages/settings.rs:353
-msgid "Automatic (prefers a USB adapter)"
-msgstr ""
-
-#: crates/leh-gtk/src/pages/settings.rs:362
-#, no-c-format
-msgid "{iface} (not connected)"
-msgstr ""
-
-#: crates/leh-gtk/src/pages/settings.rs:379
-#, no-c-format
-msgid "Uses {adapter}"
-msgstr ""
-
-#: crates/leh-gtk/src/pages/settings.rs:388 crates/leh-gtk/src/state.rs:213
-msgid "in use"
-msgstr ""
-
-#: crates/leh-gtk/src/pages/settings.rs:392
-msgid "No adapter can create hotspots"
-msgstr ""
-
-#: crates/leh-gtk/src/pages/settings.rs:405
-msgid "Automatic (same as this computer)"
-msgstr ""
-
-#: crates/leh-gtk/src/pages/settings.rs:424
-msgid "Wired network to bridge"
-msgstr ""
-
-#: crates/leh-gtk/src/pages/settings.rs:431
-msgid "No wired connection selected"
-msgstr ""
-
-#: crates/leh-gtk/src/pages/settings.rs:433
-#, no-c-format
-msgid "Same as this computer: {source}"
-msgstr ""
-
-#: crates/leh-gtk/src/pages/settings.rs:434
-msgid "Same as this computer"
-msgstr ""
-
-#: crates/leh-gtk/src/pages/settings.rs:442
-msgid "No wired connection found. Plug in an Ethernet cable or USB tethering, or use Router mode."
-msgstr ""
-
-#: crates/leh-gtk/src/pages/settings.rs:444
-msgid "Only wired connections can be bridged. To share Wi-Fi or mobile internet, use Router mode."
-msgstr ""
-
-#: crates/leh-gtk/src/pages/settings.rs:448
-#, no-c-format
-msgid "Hotspot traffic currently goes through {source}. Sending only the hotspot through {name} needs the upcoming helper."
-msgstr ""
-
-#: crates/leh-gtk/src/pages/settings.rs:466
-msgid "This adapter only supports 2.4 GHz"
 msgstr ""
 
 #: crates/leh-gtk/src/pages/settings.rs:507
 msgid "Needs the Linux Easy Hotspot helper."
 msgstr ""
-
-#: crates/leh-gtk/src/pages/settings.rs:526
-msgid "Your desktop doesn't show a system tray"
-msgstr ""
-
-#: crates/leh-gtk/src/state.rs:81 crates/leh-gtk/src/state.rs:431
-#, no-c-format
-msgid "USB adapter ({iface})"
-msgstr ""
-
-#: crates/leh-gtk/src/state.rs:83
-#, no-c-format
-msgid "Built-in Wi-Fi ({iface})"
-msgstr ""
-
-#: crates/leh-gtk/src/state.rs:89
-msgid "2.4 and 5 GHz"
-msgstr ""
-
-#: crates/leh-gtk/src/state.rs:91
-msgid "2.4 GHz only"
-msgstr ""
-
-#: crates/leh-gtk/src/state.rs:127
-#, no-c-format
-msgid "The USB adapter {iface}"
-msgstr ""
-
-#: crates/leh-gtk/src/state.rs:129
-#, no-c-format
-msgid "The built-in adapter {iface}"
-msgstr ""
-
-#: crates/leh-gtk/src/state.rs:132
-#, no-c-format
-msgid "{adapter} can't create hotspots: its driver ({driver}) doesn't support access-point mode."
-msgstr ""
-
-#: crates/leh-gtk/src/state.rs:136
-#, no-c-format
-msgid "{adapter} can't create hotspots: its driver doesn't support access-point mode."
-msgstr ""
-
-#: crates/leh-gtk/src/state.rs:142
-#, no-c-format
-msgid "{iface} isn't managed by NetworkManager, so it can't be used. Check /etc/NetworkManager/conf.d for an unmanaged-devices rule."
-msgstr ""
-
-#: crates/leh-gtk/src/state.rs:146
-#, no-c-format
-msgid "{iface} is unavailable: it may be switched off (airplane mode) or missing firmware."
-msgstr ""
-
-#: crates/leh-gtk/src/state.rs:150
-#, no-c-format
-msgid "The USB Wi-Fi adapter {device} is in storage mode (it shows up as a disk with its Windows driver). Install usb-modeswitch (sudo apt install usb-modeswitch), then unplug it and plug it in again."
-msgstr ""
-
-#: crates/leh-gtk/src/state.rs:154
-#, no-c-format
-msgid "The USB Wi-Fi adapter {device} has no driver installed. Search the web for a Linux driver for “{id}”."
-msgstr ""
-
-#: crates/leh-gtk/src/state.rs:197
-msgid "Ethernet"
-msgstr ""
-
-#: crates/leh-gtk/src/state.rs:198
-msgid "Wi-Fi"
-msgstr ""
-
-#: crates/leh-gtk/src/state.rs:199
-msgid "Mobile broadband"
-msgstr ""
-
-#: crates/leh-gtk/src/state.rs:217
-msgid "not connected, connects when the hotspot starts"
-msgstr ""
-
-#: crates/leh-gtk/src/state.rs:309 crates/leh-gtk/src/state.rs:320 crates/leh-gtk/src/state.rs:879
-msgid "Unknown device"
-msgstr ""
-
-#: crates/leh-gtk/src/state.rs:398
-#, no-c-format
-msgid "Sharing internet from {source}"
-msgstr ""
-
-#: crates/leh-gtk/src/state.rs:399
-msgid "Hotspot on, but this computer has no internet right now"
-msgstr ""
-
-#: crates/leh-gtk/src/state.rs:406
-msgid "your wired network"
-msgstr ""
-
-#: crates/leh-gtk/src/state.rs:407
-#, no-c-format
-msgid "Bridged to {source}"
-msgstr ""
-
-#: crates/leh-gtk/src/state.rs:415
-msgid "Local network only (no internet)"
-msgstr ""
-
-#: crates/leh-gtk/src/state.rs:429
-#, no-c-format
-msgid "ch {n}"
-msgstr ""
-
-#: crates/leh-gtk/src/state.rs:479
-msgid "Last connected just now"
-msgstr ""
-
-#: crates/leh-gtk/src/state.rs:512
-#, no-c-format
-msgid "{rate} (throttled)"
-msgstr ""
-
-#: crates/leh-gtk/src/state.rs:516
-msgid "Blocked by data cap"
-msgstr ""
-
-#: crates/leh-gtk/src/state.rs:521
-#, no-c-format
-msgid "{rate} limit"
-msgstr ""
-
-#: crates/leh-gtk/src/state.rs:524
-msgid "High priority"
-msgstr ""
-
-#: crates/leh-gtk/src/state.rs:525
-msgid "Low priority"
-msgstr ""
-
-#: crates/leh-gtk/src/state.rs:557 crates/leh-gtk/src/widgets.rs:306
-msgid "Normal"
-msgstr ""
-
-#: crates/leh-gtk/src/state.rs:558
-msgid "Next start fails"
-msgstr ""
-
-#: crates/leh-gtk/src/state.rs:562
-msgid "No AP-capable adapter"
-msgstr ""
-
-#: crates/leh-gtk/src/state.rs:567
-msgid "NetworkManager missing"
-msgstr ""
-
-#: crates/leh-gtk/src/state.rs:572
-msgid "Bridge without Ethernet"
-msgstr ""
-
-#: crates/leh-gtk/src/state.rs:577
-msgid "Adapter unplugged"
-msgstr ""
-
-#: crates/leh-gtk/src/state.rs:579
-msgid "Helper: ready"
-msgstr ""
-
-#: crates/leh-gtk/src/state.rs:588
-msgid "Helper: not authorized"
-msgstr ""
-
-#: crates/leh-gtk/src/state.rs:590
-msgid "Helper: too old"
-msgstr ""
-
-#: crates/leh-gtk/src/state.rs:591
-msgid "No devices"
-msgstr ""
-
-#: crates/leh-gtk/src/state.rs:592
-msgid "A new device joins"
-msgstr ""
-
-#: crates/leh-gtk/src/state.rs:596
-msgid "USB Wi-Fi adapters plugged in"
-msgstr ""
-
-#: crates/leh-gtk/src/state.rs:421
-#, no-c-format
-msgid "{n} device"
-msgid_plural "{n} devices"
-msgstr[0] ""
-msgstr[1] ""
-
-#: crates/leh-gtk/src/state.rs:482
-#, no-c-format
-msgid "Last connected {n} minute ago"
-msgid_plural "Last connected {n} minutes ago"
-msgstr[0] ""
-msgstr[1] ""
-
-#: crates/leh-gtk/src/state.rs:489
-#, no-c-format
-msgid "Last connected {n} hour ago"
-msgid_plural "Last connected {n} hours ago"
-msgstr[0] ""
-msgstr[1] ""
-
-#: crates/leh-gtk/src/state.rs:496
-#, no-c-format
-msgid "Last connected {n} day ago"
-msgid_plural "Last connected {n} days ago"
-msgstr[0] ""
-msgstr[1] ""
-
-#: crates/leh-gtk/src/tray.rs:30
-msgid "Working…"
-msgstr ""
-
-#: crates/leh-gtk/src/tray.rs:104
-#, no-c-format
-msgid "Allow “{name}”"
-msgstr ""
-
-#: crates/leh-gtk/src/tray.rs:112
-#, no-c-format
-msgid "Block “{name}”"
-msgstr ""
-
-#: crates/leh-gtk/src/tray.rs:135
-msgid "Show window"
-msgstr ""
-
-#: crates/leh-gtk/src/tray.rs:32
-#, no-c-format
-msgid "Running · {n} device"
-msgid_plural "Running · {n} devices"
-msgstr[0] ""
-msgstr[1] ""
-
-#: crates/leh-gtk/src/tray.rs:34
-#, no-c-format
-msgid " · {n} waiting"
-msgid_plural " · {n} waiting"
-msgstr[0] ""
-msgstr[1] ""
 
 #: crates/leh-gtk/src/widgets.rs:139
 #, no-c-format
@@ -1195,66 +1344,6 @@ msgstr ""
 msgid "Type a number and pick the unit, or type it: 500, 1.5 GB. Leave empty for no cap."
 msgstr ""
 
-#: crates/leh-gtk/src/widgets.rs:203
-msgid "type a number"
-msgstr ""
-
-#: crates/leh-gtk/src/widgets.rs:204
-msgid "too small"
-msgstr ""
-
-#: crates/leh-gtk/src/widgets.rs:205
-msgid "too large"
-msgstr ""
-
-#: crates/leh-gtk/src/widgets.rs:290
-msgid "Download limit"
-msgstr ""
-
-#: crates/leh-gtk/src/widgets.rs:296
-msgid "Upload limit"
-msgstr ""
-
-#: crates/leh-gtk/src/widgets.rs:301
-msgid "Data cap per session"
-msgstr ""
-
-#: crates/leh-gtk/src/widgets.rs:303
-msgid "No cap"
-msgstr ""
-
-#: crates/leh-gtk/src/widgets.rs:306
-msgid "Priority"
-msgstr ""
-
-#: crates/leh-gtk/src/widgets.rs:306
-msgid "High"
-msgstr ""
-
-#: crates/leh-gtk/src/widgets.rs:306
-msgid "Low"
-msgstr ""
-
-#: crates/leh-gtk/src/widgets.rs:307
-msgid "Who gets bandwidth first when the link is busy"
-msgstr ""
-
-#: crates/leh-gtk/src/widgets.rs:309
-msgid "When the cap is reached"
-msgstr ""
-
-#: crates/leh-gtk/src/widgets.rs:311
-msgid "Block the device"
-msgstr ""
-
-#: crates/leh-gtk/src/widgets.rs:312
-msgid "Slow to 256 kbps"
-msgstr ""
-
-#: crates/leh-gtk/src/widgets.rs:313
-msgid "Slow to 1 Mbps"
-msgstr ""
-
 #: crates/leh-model/src/reasons.rs:31 crates/leh-model/src/reasons.rs:69
 msgid "The hotspot was turned off."
 msgstr ""
@@ -1267,7 +1356,7 @@ msgstr ""
 msgid "Couldn't set up the hotspot's network addresses."
 msgstr ""
 
-#: crates/leh-model/src/reasons.rs:34
+#: crates/leh-model/src/reasons.rs:34 crates/leh-win/src/logic.rs:433 crates/leh-win/src/logic.rs:439
 msgid "Starting the hotspot took too long."
 msgstr ""
 
@@ -1371,4 +1460,96 @@ msgstr ""
 #: crates/leh-model/src/config.rs:155
 #, no-c-format
 msgid "config file version {n} is newer than this app supports"
+msgstr ""
+
+#: crates/leh-win/src/lib.rs:108
+msgid "This backend only works on Windows."
+msgstr ""
+
+#: crates/leh-win/src/logic.rs:27
+msgid "This computer has no Wi-Fi adapter, so it can't create a hotspot."
+msgstr ""
+
+#: crates/leh-win/src/logic.rs:244
+msgid "Connect this computer to the internet first: Windows' hotspot shares an existing connection."
+msgstr ""
+
+#: crates/leh-win/src/logic.rs:263
+msgid "Windows rejected the hotspot name or password. Use up to 32 characters for the name and 8 to 63 for the password."
+msgstr ""
+
+#: crates/leh-win/src/logic.rs:295
+msgid "Windows returned no result."
+msgstr ""
+
+#: crates/leh-win/src/logic.rs:310
+msgid "Windows couldn't turn the hotspot off."
+msgstr ""
+
+#: crates/leh-win/src/logic.rs:312
+msgid "Windows couldn't start the hotspot."
+msgstr ""
+
+#: crates/leh-win/src/logic.rs:316
+msgid "The mobile broadband (cellular) connection is turned off. Turn it on and try again."
+msgstr ""
+
+#: crates/leh-win/src/logic.rs:321
+msgid "Wi-Fi is turned off. Turn it on and try again."
+msgstr ""
+
+#: crates/leh-win/src/logic.rs:325
+msgid "Your mobile operator didn't confirm in time that sharing is allowed. Try again."
+msgstr ""
+
+#: crates/leh-win/src/logic.rs:330 crates/leh-win/src/logic.rs:382
+msgid "Your mobile operator doesn't allow sharing this connection."
+msgstr ""
+
+#: crates/leh-win/src/logic.rs:334
+msgid "Windows is already turning the hotspot on or off. Wait a moment and try again."
+msgstr ""
+
+#: crates/leh-win/src/logic.rs:339
+msgid "Bluetooth is turned off. Turn it on and try again."
+msgstr ""
+
+#: crates/leh-win/src/logic.rs:343
+msgid "The connection being shared has no internet access right now."
+msgstr ""
+
+#: crates/leh-win/src/logic.rs:347
+msgid "Wi-Fi can't be used right now (airplane mode or a radio restriction). Turn off airplane mode and try again."
+msgstr ""
+
+#: crates/leh-win/src/logic.rs:352
+msgid "The hotspot can't use this band while Wi-Fi is connected on another one. Choose another band."
+msgstr ""
+
+#: crates/leh-win/src/logic.rs:376
+msgid "Sharing this computer's connection is turned off by your organization's policy."
+msgstr ""
+
+#: crates/leh-win/src/logic.rs:379
+msgid "This computer's Wi-Fi hardware can't run Windows' Mobile Hotspot."
+msgstr ""
+
+#: crates/leh-win/src/logic.rs:385
+msgid "This connection's service plan doesn't include sharing."
+msgstr ""
+
+#: crates/leh-win/src/logic.rs:388
+msgid "Sharing this connection needs your mobile operator's app, which isn't installed."
+msgstr ""
+
+#: crates/leh-win/src/logic.rs:391
+msgid "Windows doesn't let apps control the Mobile Hotspot on this computer."
+msgstr ""
+
+#: crates/leh-win/src/logic.rs:401
+msgid "This edition of Windows doesn't include Mobile Hotspot."
+msgstr ""
+
+#: crates/leh-win/src/logic.rs:421
+msgid "Windows turned the hotspot off right after starting it. Try again."
 msgstr ""

@@ -5,7 +5,9 @@ them into every po/*.po (needs msgmerge from the gettext package).
     python3 scripts/update-po.py
 
 UI strings are found in tr("…"), n_("…"), trf("…", …) and tr_n("…", "…", n)
-calls; NetworkManager reasons and validation errors come from leh-model.
+calls in both apps (crates/easyhotspot and crates/leh-gtk); NetworkManager
+reasons and validation errors come from leh-model, Windows' messages from
+leh-win.
 """
 import glob, os, re, subprocess, sys
 
@@ -29,7 +31,9 @@ def add(msgid, plural, ref):
     e = entries.setdefault(msgid, [plural, []])
     e[1].append(ref)
 
-for path in sorted(glob.glob(os.path.join(ROOT, 'crates/leh-gtk/src/**/*.rs'), recursive=True)):
+UI_SOURCES = ['crates/easyhotspot/src/**/*.rs', 'crates/leh-gtk/src/**/*.rs']
+ui_files = sorted({p for g in UI_SOURCES for p in glob.glob(os.path.join(ROOT, g), recursive=True)})
+for path in ui_files:
     rel = os.path.relpath(path, ROOT)
     if rel.endswith('i18n.rs'):
         continue
@@ -52,6 +56,15 @@ for name in ['reasons', 'password', 'ssid', 'config']:
         if s.count('{n}') > 1:
             continue
         add(s, None, f'{rel}:{line_of(src, m.start())}')
+
+# Windows backend messages: whole sentences in string literals (ones built
+# with run-time text can't be looked up and are left out).
+SENTENCE = re.compile(r'"([A-Z][^"{}\\]*[.])"')
+for path in sorted(glob.glob(os.path.join(ROOT, 'crates/leh-win/src/*.rs'))):
+    rel = os.path.relpath(path, ROOT)
+    src = strip_tests(open(path, encoding='utf-8').read())
+    for m in SENTENCE.finditer(src):
+        add(m.group(1), None, f'{rel}:{line_of(src, m.start())}')
 
 def q(s):
     return '"' + s + '"'
